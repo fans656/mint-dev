@@ -1,0 +1,15 @@
+2015-10-20 09:11:31
+两个 link-layer switch (链路层交换机) 能彼此连接吗？
+昨儿晚上看wiki说是switch根据MAC-端口映射来转发包，...
+google了下，说是可以
+之前以为不可以的，这么看来，switch有这样的功能：即不认识的MAC都从特定端口转发出去，之后就由这个端口连接的另一个switch来负责了
+
+2015-10-20 10:26:36
+[sim]
+https://en.wikipedia.org/wiki/Collision_domain
+) 模拟两台直连电脑间的collision
+) 模拟三台通过hub(集线器)连接的..的collision
+
+[learn]
+https://en.wikipedia.org/wiki/Carrier_sense_multiple_access_with_collision_detection
+CSMA/CD

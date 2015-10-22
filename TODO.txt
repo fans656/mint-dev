@@ -1,0 +1,13 @@
+2015-10-20 22:12:14
+done ) load components
+done ) drag & drop
+
+2015-10-21 14:46:45
+done ) move in scene
+done ) delete
+done ) connect two computers (graphically)
+done ) link follows when node moves
+
+2015-10-21 17:11:09
+) persistence
+) NIC(Network Interface Controller)
