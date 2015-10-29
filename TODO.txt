@@ -11,3 +11,38 @@ done ) link follows when node moves
 2015-10-21 17:11:09
 ) persistence
 ) NIC(Network Interface Controller)
+
+2015-10-22 20:46:09
+) auto link type selection based on port type
+    no need to press "link" button in toolbox first
+
+2015-10-27 21:39:48
+) layer2 - transmission errors
+    flip, less/equal/more than trasmitted
+) layer2 - flow control (fast senders & slow receivers)
+) layer2 - maximum frame length (p196)
+    https://en.wikipedia.org/wiki/Ethernet_frame
+    Ethernet MTU of 1500B
+
+) 演示物理层传输错误
+    左右两侧小电脑屏幕，左边是待传输的数据，右边是接收到的数据
+    数据都是二进制的 011100101 这种
+    点击“开始传输”后，左侧的01串开始向右移动，线路上出现信号动画
+    然后右边屏幕中从左侧开始挤入接收到的01串
+    有三种错误情况：
+        1) bit flip
+        2) bit missing
+        3) bit insertion
+    所以两边屏幕中01串的移动并不一定同步——flip或正常情况下是同步的
+    但是当missing时就会出现左侧移动了而右侧没动
+    当insertion时，左侧动一个bit时右侧加速动了2个(或多个)bit
+
+2015-10-28 18:54:43
+) unacknowledged connection-less transmission
+) acknowledged connection-less transmission
+) acknowledged connection-oriented transmission
+
+) corrupted frame
+) missing frame & missing acknowledgement
+    may due to bit flip in flag bytes
+) timer for retransmission

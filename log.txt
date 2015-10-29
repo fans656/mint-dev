@@ -13,3 +13,54 @@ https://en.wikipedia.org/wiki/Collision_domain
 [learn]
 https://en.wikipedia.org/wiki/Carrier_sense_multiple_access_with_collision_detection
 CSMA/CD
+
+2015-10-23 16:11:08
+    sock.listen(backlog)
+里头的backlog的含义有必要澄清，这个数是操作系统允许积压的尚未被accept的所有connection request(在这里就是一个SYN包)的最大个数
+它说的不是服务器最多能维持几个tcp链接，而是说假如你accept得不够快的话，os最多帮你bookkeeping多少个链接请求
+
+另外socket api里头分为 listen socket 和 data socket
+其实在网络层面没这个区分，你 listen 在80就是80，这时还不存在connection，你只是跟os说了声“嘿，如果有人来找80，告我声啊”
+(os是永远能收到发给任何端口的请求的，只是如果之前没有进程register在这个端口上，os就自己帮它回绝或者ignore了)
+当请求到来的时候，只要有人监听，os就已经自作主张发回了ACK——不管你进程accept没有，这时其实connection就已经有了，在API层面由data socket代表，accept只是跟os取一下这个socket
+
+2015-10-23 16:32:17
+protocol定义了某一layer的两个entities之间的交互行为，两个entities可以逻辑上视为直接交互是因为下层layer提供的服务保证了它们正好看到自己层定义的协议
+之前某处画的那个5层layer每层entities都交互实际上不准确，因为你看MAC层只能在双绞线两边儿交互，而IP层是确确实实穿过好多路由器交互的
+所以更应该画成两边儿5层，中间经过几个3层
+叫做53(年高考..模拟..囧)
+4、5层直接交互，下面的是在每个hoop间交互的
+
+2015-10-23 18:41:35
+未来的学生会不会把Internet当作历史来学习；或者Internet只是更大的星际网络中一个古老的组成部分
+连接地球和火星通信网的中间部分采用新的技术，使用新的协议
+
+2015-10-24 14:31:39
+关于带宽(bandwidth)和时延(latency)
+设想一个传送带，这头儿有个搬运工往上放东西，他放的速度代表了带宽，即每秒能放上去多少字节的东西
+传送带的速度以及距离决定了时延，即从这头儿放上去的东西需要多久能到那头儿
+
+换个比喻，从一个城市到另一个城市的货运
+我买了一条路，只能跑三轮儿，带宽相当小
+你买了一条运河，大集装箱的轮船运，带宽极大
+
+再来个，从地球到木星的链路，带宽不谈，时延大到简直了
+
+最后一说：带宽就是圆柱体的截面
+
+2015-10-26 19:17:24
+computer networks (Andrew S. Tanenbaum) p86
+这里说的很有意思，之前听说那些智能网络的概念还觉得对不对呀，是不是管得太多了？这里这个场景却确实很合适：
+卫星通信是一种很便宜的broadcast——一个卫星的广播可以覆盖1/3个地球，把网络中cache的流量交给这种通信方式，点对点的交给线路通信
+及至更细分的将流量类型与基础网络设施匹配的智能化调度，可以优化网络的使用
+
+2015-10-28 19:01:45
+https://www.grotto-networking.com/DiscreteEventPython.html
+https://simpy.readthedocs.org/en/latest/
+做到后面可能会用到simpy以及discrete event技术
+
+2015-10-28 21:59:37
+http://rpyc.readthedocs.org/en/latest/
+想着用RPC来实现每个终端设备console中对终端的控制
+python自带的xmlrpc弱爆了，object instance返回成dict
+这个rpyc简直屌，完全是自己想象的样子，学名“transparent sysmmetric”

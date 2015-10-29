@@ -28,10 +28,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
 
         # consoles' communication thread
-        from communication import Thread
-        self.thread = Thread()
         import communication
+        from communication import Thread
+        import comm_rpyc
+        self.thread = Thread()
         communication.thread = self.thread
+        communication.wnd = self
         self.thread.dataReceived.connect(self.dataReceived)
         self.thread.start()
 
@@ -39,10 +41,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(data)
 
     def closeEvent(self, e):
-        from twisted.internet import reactor
-        reactor.stop()
-        self.thread.quit()
-        self.thread.wait()
+        pass
+        #from twisted.internet import reactor
+        #reactor.stop()
+        #self.thread.quit()
+        #self.thread.wait()
 
     def createToolBox(self):
         self.toolBox = QToolBox()

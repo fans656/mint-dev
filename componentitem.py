@@ -55,6 +55,8 @@ class DeviceItem(QGraphicsPixmapItem):
 
     def mouseDoubleClickEvent(self, e):
         from communication import host, port
+        import communication
+        communication.console_object = self
         os.system('start python -i console.py {host} {port} {env}'.format(
             'console.py',
             host=host,
