@@ -64,3 +64,8 @@ http://rpyc.readthedocs.org/en/latest/
 想着用RPC来实现每个终端设备console中对终端的控制
 python自带的xmlrpc弱爆了，object instance返回成dict
 这个rpyc简直屌，完全是自己想象的样子，学名“transparent sysmmetric”
+
+2015-10-29 12:34:21
+感觉从GUI入手会蒙蔽逻辑，写得乱
+打算下来先尝试用simpy做一个CLI的版本，然后再GUI化——GUI应该是独立于核心模拟的
+也就是说不要GUI也能跑，而且可以有多个不同的GUI实现

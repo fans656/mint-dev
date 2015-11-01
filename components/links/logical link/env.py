@@ -1,8 +1,8 @@
-import nic
+import physics
 
 config = {
     'device_name': 'pc',
     'interfaces': [
-        nic.NIC,
+        physics.Line,
         ],
         }

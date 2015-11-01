@@ -1,12 +1,27 @@
 import os
+import imp
+import sys
 
 from PySide.QtCore import *
 from PySide.QtGui import *
 
-class DeviceItem(QGraphicsPixmapItem):
+class Env(object):
+
+    def load_env(self):
+        # load custum scripts
+        env = os.path.join(self.device.path, 'env.py')
+        sys.path.insert(0, self.device.path)
+        env = imp.load_source('', env)
+        del sys.path[0]
+        env.interfaces = {cls.__name__: cls(self) for cls in env.config['interfaces']}
+        self.env = env
+
+
+class DeviceItem(QGraphicsPixmapItem, Env):
 
     def __init__(self, device):
         self.device = device
+        self.load_env()
         pixmap = QPixmap(device.icon_path).scaledToWidth(100)
         super(DeviceItem, self).__init__(pixmap)
         size = pixmap.size()
@@ -70,9 +85,19 @@ class DeviceItem(QGraphicsPixmapItem):
                 link.updateEndPositions()
         return super(DeviceItem, self).itemChange(change, value)
 
-class LinkItem(QGraphicsLineItem):
+    def get_peer(self):
+        try:
+            return self.links[0].env
+        except IndexError:
+            from communication import NoPeer
+            raise NoPeer('No peer')
+
+class LinkItem(QGraphicsLineItem, Env):
 
     def __init__(self, source):
+        if source:
+            self.device = source.device
+            self.load_env()
         super(LinkItem, self).__init__()
         self.source = source
         self.sink = None
@@ -85,3 +110,6 @@ class LinkItem(QGraphicsLineItem):
     def updateEndPositions(self):
         self.setLine(QLineF(self.source.scenePos(),
             self.sink.scenePos()))
+
+    #def get_peer(self):
+    #    return pass

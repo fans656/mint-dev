@@ -11,3 +11,5 @@ class Thread(QThread):
 
     def run(self):
         print 'dummy Thread.run'
+
+class NoPeer(Exception): pass
