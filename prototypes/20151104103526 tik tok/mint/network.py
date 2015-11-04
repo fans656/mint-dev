@@ -14,7 +14,7 @@ class Network(object):
         self.thread_queues = {}
         self.before_step_func = lambda: None
         self.after_step_func = lambda: None
-        self.names = defaultdict(lambda: -1)
+        self.names = defaultdict(lambda: 0)
         self.informing_queue = Queue.Queue()
         self.reporting_queue = Queue.Queue()
         self.stopped = False

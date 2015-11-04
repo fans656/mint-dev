@@ -4,11 +4,6 @@ def bitify(data):
 def unbitify(bits):
     return ''.join(chr(int(bits[i:i+8], 2)) for i in range(0, len(bits), 8))
 
-def bitwise_or(*datas):
-    nbits = len(datas[0])
-    return ''.join('1' if any(data[i] == '1' for data in datas) else '0'
-            for i in range(nbits))
-
 def format_bytes(bytes, type='hex'):
     if type == 'hex':
         return ' '.join('{:02x}'.format(ord(byte)) for byte in bytes)
@@ -33,22 +28,8 @@ def split_into(xs, group_size):
 def split_at(xs, index):
     return xs[:index], xs[index:]
 
-def view_queue(q):
-    import Queue
-    a = []
-    while True:
-        try:
-            a.append(q.get(block=False))
-        except Queue.Empty:
-            break
-    for t in a:
-        q.put(t)
-    return a
-
-class Bunch(object):
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
 if __name__ == '__main__':
-    print bitwise_or('001', '110')
+    t = bitify('hi\x03')
+    print t
+    t = unbitify(t)
+    print repr(t)

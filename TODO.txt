@@ -46,3 +46,6 @@ done ) link follows when node moves
 ) missing frame & missing acknowledgement
     may due to bit flip in flag bytes
 ) timer for retransmission
+
+2015-10-26 20:30:43
+) p91 PSTN - public switched telephone network

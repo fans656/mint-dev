@@ -3,6 +3,16 @@ import Queue
 import mint
 from mint import network, utils
 
+class Entity(object):
+
+    def __init__(self, name=None, n_ports=1):
+        self.name = name or network.network.new_name(self)
+        self.ports = [Port(self) for _ in range(n_ports)]
+        network.network.add(self)
+
+    def __repr__(self):
+        return '<{} {}>'.format(self.__class__.__name__, self.name)
+
 class Port(object):
 
     def __init__(self, entity):
@@ -44,10 +54,7 @@ class Port(object):
         self.osymbol, self.obuffer = utils.split_at(self.obuffer, 1)
 
     def input(self):
-        if self.peer:
-            self.ibuffer += self.peer.osymbol
-        else:
-            self.ibuffer += '0'
+        self.ibuffer += self.peer.osymbol
 
     def send(self, data):
         self.oqueue.put(data)
@@ -78,16 +85,6 @@ class Port(object):
         s += '\tebuffer {}\n'.format(self.ebuffer)
         print s[:-1]
 
-class Entity(object):
-
-    def __init__(self, name=None, n_ports=1):
-        self.name = name or network.network.new_name(self)
-        self.ports = [Port(self) for _ in range(n_ports)]
-        network.network.add(self)
-
-    def __repr__(self):
-        return '<{} {}>'.format(self.__class__.__name__, self.name)
-
 class Link(Entity):
 
     def __init__(self, port1=None, port2=None, name=None,
@@ -108,15 +105,12 @@ class Link(Entity):
     def run(self):
         preamble = '0' * self.latency
         self.pipes = {self.ports[0]: preamble, self.ports[1]: preamble}
-        while not mint.stopped():
+        while not network.network.stopped:
             self.transfer(self.ports[0], self.ports[1])
             self.transfer(self.ports[1], self.ports[0])
 
     def transfer(self, port1, port2):
-        bit = port1.recv(1)
-        #import random
-        #bit = '1' if random.randint(0, 1) else '0'
-        self.pipes[port1] += bit
+        self.pipes[port1] += port1.recv(1)
         bits, self.pipes[port1] = utils.split_at(self.pipes[port1], 1)
         port2.send(bits)
         #print '{} -> {}: {}'.format(port1, port2, bits)
@@ -126,21 +120,3 @@ class Host(Entity):
     def __init__(self, name=None):
         super(Host, self).__init__(name=name, n_ports=1)
         self.port = self.ports[0]
-
-class Hub(Entity):
-
-    def __init__(self, name=None, n_ports=3):
-        super(Hub, self).__init__(name=name, n_ports=n_ports)
-
-    def run(self):
-        while not mint.stopped():
-            n = len(self.ports)
-            sent_bits = ['0'] * n
-            for i, port in enumerate(self.ports):
-                bit = port.recv(1)
-                if bit == '1':
-                    for j in range(n):
-                        if i != j:
-                            sent_bits[j] = '1'
-            for i, port in enumerate(self.ports):
-                port.send(sent_bits[i])
