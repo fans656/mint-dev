@@ -18,10 +18,10 @@ Example usage:
     
     @proc
     def _():
-        print h2.port.recv(5)
+        print h2.port.recv(8)
     
     run()
 
 Output:
     
-    01110
+    00011100
