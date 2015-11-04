@@ -1,4 +1,6 @@
-# mint - Computer network simulation library
+# mint
+
+A Python library for computer network simulation.
 
 Example usage:
 
