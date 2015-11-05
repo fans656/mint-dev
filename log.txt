@@ -99,3 +99,47 @@ simpy里跑到相应的地方就给它们 e.set()
 之前写到hub就晕乎了，这些天来一直卡卡停停
 昨儿跟肖师兄聊这个也聊了挺久
 今儿终于搞定啦！精确时序，hub连3个host，啊哈哈哈
+
+2015-11-04 13:13:56
+描述一下目前的model:
+In the first tik, what have the system done is allow all the entities to put the data (that they want to send) into the system's hardware world (i.e. ports).
+Then comes the first tok.
+The tok cosists of two phases: output and input.
+In the output phase, ports pull the data given to them, set their output symbol accordingly (or '0' if there are no data given).
+In the input phase, ports detect their peer's output symbol, convert into bits and push to their entity.
+
+So a `recv` will block in the first tik, and only after the first tok, in the second tik will it be able to fetch one bit.
+
+A tok will transfer one bit along a peered ports, a tik after it then will process this bit.
+
+In the scene of links or hubs, their bit process is take one port's bit and give it to another port, we call this a "port pimp". The take requires one previous tok, and the give occured in one tik. These comprise into a full tik-tok step. So a bit travels along the network path will be delayed on every "port pimper" at least 1 tik-tok. If the pimper it self `wait` in the process, then the bit will be delayed more tik-tok. For example, in a system where a link with latency of 3 linking two hosts, the data transfer latency between the hosts will be 4.
+
+2015-11-04 22:40:18
+https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing
+https://pypi.python.org/pypi/cobs
+COBS - Consistent Overhead Byte Stuffing
+    一种 framing protocol
+    PPP 也会做 framing
+
+https://en.wikipedia.org/wiki/High-Level_Data_Link_Control
+https://www.quora.com/What-is-the-purpose-of-bit-stuffing-and-byte-stuffing-in-computer-communication
+HDLC 用的是 bit stuffing
+好像在asynchronous framming中也会用byte stuffing
+
+https://networkengineering.stackexchange.com/questions/13233/bit-and-byte-stuffing-in-hdlc-frames/13281#13281?newreg=c9fe3315235f42599c1823467da64d4d
+看样子说两种stuffing的使用场景不同：
+    bit stuffing - synchronous serial link
+    byte stuffing - asynchronous serial link (e.g. RS-232)
+
+2015-11-04 23:55:54
+http://www.sangoma.com/tutorials/sync_n_async/
+这里讲解了 sychronous/asynchronous communication
+
+2015-11-05 08:24:06
+https://networkengineering.stackexchange.com/questions/5263/why-is-the-ethernet-frame-size-fixed
+这里讲了为啥Ethernet的frame有最小/最大长度限制
+主要是由于collision detection的需要，CSMA/CD啥的
+这个framing之后再做
+
+https://networkengineering.stackexchange.com/questions/10423/how-long-is-a-frame-really-supposed-to-be-and-when-is-a-frame-a-babble
+and mark

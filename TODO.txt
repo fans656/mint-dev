@@ -49,3 +49,11 @@ done ) link follows when node moves
 
 2015-10-26 20:30:43
 ) p91 PSTN - public switched telephone network
+
+2015-11-05 08:15:59
+) asynchronous serial communication (bytes)
+    http://www.sangoma.com/tutorials/sync_n_async/
+    currently we have implemented the synchronous serial comm.. (bits)
+
+2015-11-05 09:48:24
+) make mint network capable of multiple runs
