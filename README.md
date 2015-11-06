@@ -70,6 +70,6 @@ Down to physical layer, model the link channal behaviour as you wish:
     switch = Switch()
 
     link(a, switch.ports[0])
-    link(a, switch.ports[0], latency=20, error_func=error.flip_bit(ith=3))
+    link(b, switch.ports[1], latency=20, error_func=error.flip_bit(ith=3))
     
     run()
