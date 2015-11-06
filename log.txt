@@ -143,3 +143,30 @@ https://networkengineering.stackexchange.com/questions/5263/why-is-the-ethernet-
 
 https://networkengineering.stackexchange.com/questions/10423/how-long-is-a-frame-really-supposed-to-be-and-when-is-a-frame-a-babble
 and mark
+
+2015-11-05 19:29:43
+https://en.wikipedia.org/wiki/Code
+直接看海明码好晕啊，，一路溯源，从这里看起
+
+https://en.wikipedia.org/wiki/Coding_theory
+https://en.wikipedia.org/wiki/Forward_error_correction
+
+https://en.wikipedia.org/wiki/Binary_erasure_channel
+https://en.wikipedia.org/wiki/Binary_symmetric_channel
+移除信道反而说是最简单的
+
+https://en.wikipedia.org/wiki/Erasure_code
+移除编码
+
+https://en.wikipedia.org/wiki/Hamming_distance
+汉明距离
+
+2015-11-05 21:12:06
+https://en.wikipedia.org/wiki/Block_code
+一路到这里，终于能看明白点儿了
+block code 就是把一个bit串分成长度固定的一块儿一块儿，然后每块儿通过查字典翻译成某个另外的bit块儿——叫做codeword
+
+2015-11-06 15:10:17
+感觉可以暂时略过物理层的error detection/correction
+线路错误导致的丢包可以直接模拟(比如不管错没错，NIC丢掉收到的第2个frame)
+——因为书里大约意思是CRC这种东西都是物理设备(NIC)来做的，OS根本看不到检错纠错的过程，它只能意识到包到没到层面的事件
