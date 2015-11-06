@@ -5,6 +5,8 @@ from collections import defaultdict
 
 from mint import utils
 
+debug_params = {}
+
 class Network(object):
 
     class Stopped(Exception): pass
@@ -15,6 +17,7 @@ class Network(object):
         self.procs = []
         self.names = defaultdict(lambda: -1)
         self.stopped = False
+        self.debug_params = {}
 
     def new_name(self, entity):
         cls = entity.__class__
@@ -30,9 +33,9 @@ class Network(object):
     def proc(self, *fs):
         self.procs.extend(wrap(f) for f in fs)
 
-    def run(self, until=None, debug={}):
+    def run(self, until=None):
         self.now = 0
-        self.setup_debug(debug)
+        self.setup_debug()
         self.start_entities()
         for self.now in self.tik_toks(until):
             self.tik()
@@ -72,15 +75,15 @@ class Network(object):
         for port in self.ports:
             port.pull()
         self.call_debug_func('pulled')
-        for port in self.ports:
-            port.output()
-        self.call_debug_func('outputted')
-        for port in self.ports:
-            port.input()
-        self.call_debug_func('inputted')
+        #for port in self.ports:
+        #    port.output()
+        #self.call_debug_func('outputted')
         for port in self.ports:
             port.push()
         self.call_debug_func('pushed')
+        #for port in self.ports:
+        #    port.push()
+        #self.call_debug_func('pushed')
 
     def shutdown(self):
         for t in self.threads:
@@ -96,13 +99,14 @@ class Network(object):
             t.report.put(1)
             t.inform.get()
 
-    def setup_debug(self, debug_params):
+    def setup_debug(self):
+        debug_params = self.debug_params
         if hasattr(debug_params, '__call__'):
             debug_params = {'func': debug_params}
         self.debug_phases = debug_params.get('phases', ['all'])
         self.debug_func = debug_params.get('func', lambda: None)
         if 'all' in self.debug_phases:
-            self.debug_phases = ('tiked', 'pulled', 'outputted', 'inputted', 'pushed')
+            self.debug_phases = ('tiked', 'pulled', 'pushed')
 
     def call_debug_func(self, phase):
         self.phase = phase

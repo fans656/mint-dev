@@ -15,6 +15,9 @@ def proc(*fs, **kwargs):
         f = functools.partial(f, *args, **kwargs)
         network.network.proc(f)
 
+def debug(f):
+    network.network.debug_params = f
+
 def now():
     return network.network.now
 

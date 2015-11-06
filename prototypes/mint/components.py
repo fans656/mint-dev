@@ -1,5 +1,6 @@
 import Queue
 import functools
+from collections import deque
 
 import mint
 from mint import network, utils
@@ -11,12 +12,11 @@ class Port(object):
         self.peer = None
         self.oqueue = Queue.Queue()
         self.iqueue = Queue.Queue()
-        self.obuffer = ''
-        self.ibuffer = ''
+        self.obuffer = deque()
+        self.ibuffer = deque()
         self.osymbol = '0'
-        self.ebuffer = ''
-        self.obits = ''
-        self.ibits = ''
+        self.obits = []
+        self.ibits = []
 
     def __repr__(self):
         try:
@@ -31,33 +31,26 @@ class Port(object):
             self.peer.peer_with(self)
 
     def pull(self):
-        data = ''
         while True:
             try:
-                data += self.oqueue.get(block=False)
+                bits = utils.listify_bits(self.oqueue.get(block=False))
+                self.obuffer.extend(bits)
             except Queue.Empty:
                 break
-        self.obuffer += data or '0'
+        if not self.obuffer:
+            self.obuffer.append(0)
+        bit = self.obuffer.popleft()
+        self.osymbol = bit
+        self.obits.append(bit)
 
     def push(self):
-        self.iqueue.put(self.ibuffer)
-        self.ibuffer = ''
-
-    def output(self):
-        bits, self.obuffer = utils.split_at(self.obuffer, 1)
-        self.osymbol = bits
-        self.obits += bits
-
-    def input(self):
         if self.peer:
-            bits = self.peer.osymbol
-        else:
-            bits = '0'
-        self.ibuffer += bits
-        self.ibits += bits
+            bit = self.peer.osymbol
+            self.iqueue.put(bit)
+            self.ibits.append(bit)
 
-    def send(self, data):
-        self.oqueue.put(data)
+    def send(self, bits):
+        self.oqueue.put(bits)
 
     def recv(self, nbits=0):
         '''
@@ -75,36 +68,25 @@ class Port(object):
         '''
         if not nbits:
             return iter(functools.partial(self.recv, 1), None)
+        if not self.peer:
+            # let go of unlinked port
+            # e.g. a 3-ports hub linking two hosts
+            return ''
         while True:
             while True:
                 try:
-                    self.ebuffer += self.iqueue.get(block=False)
+                    self.ibuffer.append(self.iqueue.get(block=False))
                 except Queue.Empty:
                     break
-            if len(self.ebuffer) >= nbits:
-                ret, self.ebuffer = utils.split_at(self.ebuffer, nbits)
-                return ret
-            else:
-                mint.wait(0)
-                continue
-
-    def show_internals(self):
-        s = '{}:\n'.format(self)
-        s += '\tosymbol {}   oqueue {}   iqueue {}\n'.format(
-                self.osymbol,
-                utils.view_queue(self.oqueue),
-                utils.view_queue(self.iqueue),
-                )
-        s += '\tibuffer {}\t'.format(self.ibuffer)
-        s += '\tobuffer {}\n'.format(self.obuffer)
-        s += '\tebuffer {}\n'.format(self.ebuffer)
-        print s[:-1]
+            if len(self.ibuffer) >= nbits:
+                return ''.join('1' if self.ibuffer.popleft() else '0'
+                        for _ in xrange(nbits))
+            mint.wait(0)
 
     def show(self):
-        s = '{}:\n'.format(self)
-        s += '\ti {}\n'.format(self.ibits)
-        s += '\to {}\n'.format(self.obits)
-        print s[:-1]
+        utils.put(self, self.osymbol)
+        utils.put('\to', utils.unlistify_bits(self.obits))
+        utils.put('\ti', utils.unlistify_bits(self.ibits))
 
 class Entity(object):
 
@@ -142,8 +124,6 @@ class Link(Entity):
 
     def transfer(self, port1, port2):
         bit = port1.recv(1)
-        #import random
-        #bit = '1' if random.randint(0, 1) else '0'
         self.pipes[port1] += bit
         bits, self.pipes[port1] = utils.split_at(self.pipes[port1], 1)
         port2.send(bits)

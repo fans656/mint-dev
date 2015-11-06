@@ -1,8 +1,14 @@
-def bitify(data):
-    return ''.join('{:08b}'.format(ord(byte)) for byte in data)
+def bitify(bytes):
+    return ''.join('{:08b}'.format(ord(byte)) for byte in bytes)
 
 def unbitify(bits):
     return ''.join(chr(int(bits[i:i+8], 2)) for i in range(0, len(bits), 8))
+
+def listify_bits(bits):
+    return (1 if b == '1' else 0 for b in bits)
+
+def unlistify_bits(bits):
+    return ''.join('1' if b else '0' for b in bits)
 
 def bitwise_or(*datas):
     nbits = len(datas[0])
@@ -52,7 +58,7 @@ def random_bits(length=8):
 
 def put(s, *args, **kwargs):
     import sys
-    if isinstance(s, str) or isinstance(s, unicode):
+    if (isinstance(s, str) or isinstance(s, unicode)) and '{' in s:
         if args and kwargs:
             s = s.format(*args, **kwargs)
     else:

@@ -7,13 +7,15 @@ class BitStuffingFramer(object):
         self.port = port
         self.flag = '01111110'
 
-    def send(self, bits):
+    def send(self, bytes):
+        bits = mint.utils.bitify(bytes)
         bits = self.bit_stuff(bits)
         self.port.send(bits)
 
     def recv(self):
         self.detect_preamble()
-        return self.get_payload()
+        bits = self.get_payload()
+        return mint.utils.unbitify(bits)
 
     def bit_stuff(self, bits, postamble=True):
         ret = self.flag
@@ -60,27 +62,3 @@ class BitStuffingFramer(object):
         return bits[:-8]
 
     get_payload = detect_preamble
-
-if __name__ == '__main__':
-    import functools
-
-    class Port(object):
-
-        def __init__(self, bits=''):
-            self.bits = bits
-
-        def send(self, bits):
-            self.bits = bits
-
-        def recv(self, nbits=0):
-            if not nbits:
-                return iter(functools.partial(self.recv, 1), '')
-            bits, self.bits = utils.split_at(self.bits, nbits)
-            return bits
-
-    for _ in range(8):
-        data = utils.random_bits(800)
-        framer = BitStuffingFramer(Port())
-        framer.send(data)
-        assert data == framer.recv()
-    print 'No error right? Excited!'
