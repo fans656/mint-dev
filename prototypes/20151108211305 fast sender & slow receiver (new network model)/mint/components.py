@@ -61,12 +61,12 @@ class NIC(Entity):
 
     def push_frame(self, ibit):
         self.iframe.append(ibit)
-        # TODO: use preamble to detect frame
-        if len(self.iframe) == 2 * 8:
+        if len(self.iframe) == 1 * 8:
             frame = ''.join(chr(utils.to_byte(bits))
                     for bits in utils.group(self.iframe, 8))
             try:
                 self.iframes.put(frame, block=False)
             except Queue.Full:
+                #utils.put('{} dropped frame {}', self.host, repr(frame))
                 pass
             self.iframe.clear()

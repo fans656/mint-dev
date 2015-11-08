@@ -170,3 +170,134 @@ block code 就是把一个bit串分成长度固定的一块儿一块儿，然后
 感觉可以暂时略过物理层的error detection/correction
 线路错误导致的丢包可以直接模拟(比如不管错没错，NIC丢掉收到的第2个frame)
 ——因为书里大约意思是CRC这种东西都是物理设备(NIC)来做的，OS根本看不到检错纠错的过程，它只能意识到包到没到层面的事件
+
+2015-11-07 00:12:04
+[undone]
+http://www.tldp.org/LDP/khg/HyperNews/get/net/net-intro.html
+这里最开始的一小段示例代码大约说明了网络通信中buffer空间不足时发生了什么：
+通信面向的数据都是分块的(frame, packet, etc..)，当某个块到达时没有足够的buffer来保存它，就丢弃这个块
+这样可以保证存起来的数据的integrity——如果只是在比特流中丢弃某些bit，可能造成数据的misinterpretation
+
+2015-11-07 07:52:16
+来梳理下理解：
+physical layer (layer 1) 提供的服务是
+
+    put_bits_for_send bits
+        This put the `bits` in the NIC output buffer.
+        As long as there are bits in the buffer,
+        NIC will retrieve some bit/bits, encoding into a symbol,
+        modulate and output the symbol.
+        (Maybe 13 bits ouput parallelly every 1ns on a parallel port,
+        which run down a parallel link, reach in another parallel port,
+        then enter in a modem.
+        Where the modem collect them into its buffer,
+        and do it's (probably different) encoding and outputing work,
+        say, take 3 bit every 1ms and encoding into a symbol which has
+        8 value and modulate into voltage 0.2, 0.4, ..., 0.8 etc and
+        output to a serial line.)
+        If there are no valid data in the NIC buffer, NIC just keep its
+        output symbol intact (maybe 13 zero bits).
+    
+    get_bits n_bits
+        ...(不写了，这么写太费劲)
+
+link layer 的功能是被分成两个部分，分别在OS中和NIC中完成的
+OS负责添加control header，然后把 header+payload 的 bytes 交给NIC
+NIC负责添加preamble/postamble，bit/byte stuffing，然后把处理后的bits发出去
+(问题：bit/byte stuffing 不会影响到比如 hamming code 吗？)
+(猜测：NIC的下层功能不管纠错，如果出错，只会影响到某些frame的识别：比如有些该识别出来的没识别到(丢包)，或者不该识别的识别了(这个会由link layer层的后续处理来检测这个frame的非法性))
+设想NIC的真实处理过程：
+OS请求send (link layer) packet (i.e. header + payload)
+NIC通过DMA把OS请求发送的bytes copy到自己的buffer中，注意是从buffer第2个字节开始放的，第一个字节留给preamble
+然后发送过程中才在硬件电路上实现bit stuffing
+如果在发送过程中(准确说是尚没有可用buffer的时候)OS又请求发送了，那就让它等着——呃，其实准确来说是OS留个口信然后就去干别的事儿了，让NIC不忙了之后自己interrupt
+
+然后是接收
+NIC上会检测preamble来识别frame，把识别出来的放在buffer里——所以这里可能是一个frame有最大值限制的原因！因为buffer大小是有限的。
+这里要保证buffer至少能容纳两个frame——一个已接收到的fa的和一个正在接收的fb
+嗳，其实这么model更好：
+NIC有一个有限容量的queue，还有一个容纳正在接收frame的buffer
+当一个frame接收完，queue没满的话就把这个frame放进去，满了的话就把frame丢掉
+大概意思是这样，实现上具体细节没想清楚——这里的关键是要意识到，线路上的电压是一直变化的，假如1ns是1bit的话，时间过了这个bit没存起来那就丢了
+
+所以终于搞明白 fast sender / slow receiver 的含义了(excited!)：
+一个来不及处理incomming frame的NIC是会丢掉来包的，那么sender发的太快也没用，反正这些包都无法被收到，发在网络上还占用网络资源
+所以，我们需要flow control
+
+顺便，也明白了slow sender的含义：NIC处理速度有限(OS想发快也不行，NIC没ready它就只能等着——虽然可以干别的事，但发送这茬只能等NIC ready了再进行，因为OS手头的memory也有限呀)，NIC连接的信道bandwidth有限，乃至OS进行协议处理，OS上层application当producer生产数据的速度有限
+这些共同决定了sender的发送速度，叫做bandwidth - 56Kbps, 1Gbps, etc..
+链路上的波特率可以等价转换成比特率，也是bandwidth
+链路的bandwidth，NIC每秒处理字节数的bandwidth，OS协议处理handle的数据的bandwidth，等等，，这些中的最小值决定了sender最终的bandwidth
+
+链路的长度决定了latency：1个bit从这端进去，多久从那端出来
+
+2015-11-07 09:18:32
+https://en.wikipedia.org/wiki/Data_link_layer
+在看这个，然后忽然想到这么一个场景
+a,b,c都连在一个hub或switch上
+然后a发了一个frame，里头的source address是假的——是写的b的，destination address写的c的
+完了b和c又正在通信，这么着会不会因为a的这个frame而干扰到b跟c的通信？
+于是：
+
+https://en.wikipedia.org/wiki/MAC_spoofing
+先不看了，等模拟器做到IP层再说——主要是涉及到ARP，完了ARP是涉及IP的
+
+2015-11-07 14:26:15
+在重写模型，要确认一下python里list的append之类操作是不是thread safe的
+
+2015-11-07 21:43:06
+总是做一段就卡住，然后在费力的思索过后某时又灵光一现
+这次是卡在了flow control，不知道怎么model模拟器才能支持fast sender/slow receiver的概念
+刚才是在厕所突然意识到，
+    
+    @proc
+    def _():
+        a.send('111')
+    
+    @proc
+    def _():
+        print b.recv(8)
+
+这样的function/thread们的实质是在定义网络的行为——或者说网络在时间序列中发生的non-trivial的事件(event)
+比如这里定义的是：a在时刻0发送111，b从时刻0开始接收，8个tik-tok后，收到足够的bit，然后打印出来
+我们可以改写：
+    
+    @proc
+    def _():
+        wait(3)
+        a.send('111')
+    
+    @proc
+    def _():
+        wait(8)
+        print b.recv(8)
+
+这样定义的就是：a在时刻3发送111，b在时刻8开始接收——因为port经过8个tik-tok已经收到了足够的bits，所以recv立即返回
+而在之前的定义中，recv在没有足够的bits到来时会自动跳到下一个时刻去继续接收
+
+之前做的一个所有非daemon线程结束就将模拟结束的feature，其实质就是当proc定义的网络中的non-trivial event都完成后，就结束模拟
+
+之后想做的那种通过真实application定义host行为的feature，相比现在这种只由单线程定义的host行为，要求更高——比如application中可以开启任意多的线程，甚至进程(此时通过rpyc来进程通信)
+那么此时，network中的 worker threads 和 behaviour threads 就是彼此牵制
+比如对于一个有限buffer的NIC(Network Interface Controller - 网卡)，host的send也可能block
+
+http://stackoverflow.com/questions/5407182/blocking-sockets-when-exactly-does-send-return
+(看，这里就说socket的send (TCP/UDP)可能block - due to lack of kernel send buffer)
+
+这里block的实质跟recv中是一样的，都是通过wait(0)来允许下一个tok的进行，从而到下一个tik中尝试仍然可能失败的接收
+
+之前的model中，内容比较简单，所有的处理其实都是在behaviour thread中做的，而核心网中的port又混杂了一些本应是NIC该做的工作
+现在想把port简化到只包含最基本的 output/input symbol 的地步
+然后NIC、OS部分的工作放在 worker threads 中——现在是支持一个host多个线程的
+
+NIC和OS的分工是这样的：
+NIC只负责bit stuffing和premable/postamble的添加
+其余都在OS里做
+这意味着link layer是横跨NIC和OS两个部分的——书中也是这么描述的
+当然这只是一种人为的划分，比如TOE(TCP offload engine [1])中就把整个TCP/IP stack放在了NIC中
+
+[1]
+https://en.wikipedia.org/wiki/TCP_offload_engine
+
+这里的关键是，NIC中有几个线程在跑(具体有几个、分别干什么都还没有想清楚，不过这不是重点，按mint的设计思路，这些都是可以由用户决定的——用户如果愿意，专门开一个线程跑while True也没问题)，OS也有一堆
+这要模拟的就是真实的PC机——但是现在自己的问题是... 对操作系统这片迷雾重重的虚拟层，想不明白呀~~

@@ -34,19 +34,16 @@ class NIC(Entity):
             try:
                 return self.iframes.get(block=False)
             except Queue.Empty:
-                mint.wait(0)
+                mint.wait(1)
 
     def run(self):
         while True:
-            if not self.oframe:
-                self.pull_frame()
+            self.pull_frame()
             try:
                 obit = self.oframe.popleft()
             except IndexError:
                 obit = 0
-            self.port.send(obit)
-            mint.wait(0)
-            ibit = self.port.recv()
+            ibit = self.port.io(obit)
             self.push_frame(ibit)
             mint.wait(0)
 
@@ -61,8 +58,7 @@ class NIC(Entity):
 
     def push_frame(self, ibit):
         self.iframe.append(ibit)
-        # TODO: use preamble to detect frame
-        if len(self.iframe) == 2 * 8:
+        if len(self.iframe) == 1 * 8:
             frame = ''.join(chr(utils.to_byte(bits))
                     for bits in utils.group(self.iframe, 8))
             try:

@@ -1,31 +1,28 @@
-'''
-Utopia simplex protocol
-'''
+import mint
 from mint import *
-from devices import PC
 
-@proc
+@actor
 def _():
-    for line in open('main.py'):
-        a.send(line)
+    a.nic.send('\xff')
 
-@proc
+@actor
 def _():
-    while True:
-        line = ''
-        while True:
-            ch = b.recv(1)
-            if ch == '\n':
-                break
-            line += ch
-        put('{:10}'.format(now()), b, line)
+    put('{:6} {}', now(), format(b.nic.recv(), 'bin'))
 
-def debug():
-    put(now(), phase())
+#@after_worker
+def _():
+    title()
+    put(view_queue(a.nic.oframes))
+    put(a.nic.oframe)
     a.port.show()
+    l.ports[0].show()
+    l.ports[1].show()
     b.port.show()
+    put(b.nic.iframe)
+    put(view_queue(b.nic.iframes))
     raw_input()
 
-a, b = PC('a'), PC('b')
-link(a, b)
+a, b = Host(), Host()
+l = link(a, b, latency=8)
+b.nic.set_max_n_frames(1)
 run()
