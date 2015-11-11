@@ -25,11 +25,6 @@ class NIC(Entity):
         self._oframe = deque()
         self._iframe = deque()
         self._in_frame = False
-        self.n_detected_frames = 0
-        self.n_handed_frames = 0
-        self.n_dropped_frames = 0
-        self.dropped_frame = None
-        self.frame_ended = False
 
     def send(self, frame):
         if len(frame) > self._max_frame_size:
@@ -88,7 +83,6 @@ class NIC(Entity):
             pass
 
     def process_input(self, ibit):
-        self.frame_ended = False
         if not self._in_frame:
             if self._flag_detector.feed(ibit):
                 self._in_frame = True
@@ -98,25 +92,13 @@ class NIC(Entity):
             if flag or not stuffing:
                 self._iframe.append(ibit)
                 if flag:
-                    self.n_detected_frames += 1
-                    self.frame_ended = True
                     frame = ''.join(chr(utils.to_byte(bits))
                             for bits in utils.group(self._iframe, 8))[:-1]
                     if self.fit(frame, self._ibuffer_used):
-                        self.handout(frame)
-                    else:
-                        self.discard(frame)
+                        self._iframes.append(frame)
+                        self._ibuffer_used += len(frame)
                     self._iframe.clear()
                     self._in_frame = False
 
     def fit(self, frame, n_used):
         return self.buffer_size - n_used >= len(frame)
-
-    def handout(self, frame):
-        self.n_handed_frames += 1
-        self._iframes.append(frame)
-        self._ibuffer_used += len(frame)
-
-    def discard(self, frame):
-        self.n_dropped_frames += 1
-        self.dropped_frame = list(frame)

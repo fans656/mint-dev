@@ -301,3 +301,47 @@ https://en.wikipedia.org/wiki/TCP_offload_engine
 
 这里的关键是，NIC中有几个线程在跑(具体有几个、分别干什么都还没有想清楚，不过这不是重点，按mint的设计思路，这些都是可以由用户决定的——用户如果愿意，专门开一个线程跑while True也没问题)，OS也有一堆
 这要模拟的就是真实的PC机——但是现在自己的问题是... 对操作系统这片迷雾重重的虚拟层，想不明白呀~~
+
+2015-11-11 11:22:52
+感觉NIC和OS之间又有线程乱序的问题了：如果两者都是worker thread,
+那么在一个tik-tok种可能NIC先pull了frame，然后OS才给NIC发数据
+
+于是似乎应该给所有network掌管的线程都添加一个优先级
+actor 最高
+os 次之
+worker 最次
+
+其实worker的真实含义是 port operator，而且它们在一次tik-tok中要运行两个phase
+一个是向port写，另一个是从port读
+读一定要严格发生在写之后，这样才能保证能读到初始数据
+
+但是又一想目前阶段似乎不需要做优先级
+把OS model到actor上就行了
+
+这样，fast sender 就是一个有大buffer的NIC，配合一个一口气塞满buffer的actor
+此后NIC就以最高速率把frame一个接一个地扔到physical link上
+slow receiver 呢，就是一个只有一点儿可怜小buffer(比如只能容纳一个frame)的NIC，配合一个recv一个frame之后处理了很久(比如wait(65536))的actor
+这样，在actor下一次frame前，第二个frame之后的所有frame都会被丢弃
+fast sender就想：咦，咋丢这么多，我真是日了狗了——然后哗哗哗又retransmit了一堆
+
+下来就需要我们实现一个flow control的protocol，这个protocol效果如何呢，可以通过对比使用前和使用后在receiver的NIC上丢包事件的发生频度来衡量
+conservative的protocol可能一个包都不丢，但效率不高
+aggressive的protocol可能会丢一些包，不过相应地就会消耗更多的网络资源——那些因为receiver buffer不足而丢掉的数据都算作网络传输的overhead了
+
+哦对了，顺便一提，当OS model到actor上时，因为network施加的限制，actor永远不会与worker同时运行，所以actor与worker线程间其实是不存在同步问题的——变量读写so easy!
+
+2015-11-11 12:12:21
+感觉NIC不该把byte转换成bits——效率太低了，直接在bytes上位操作输出输入bit估计效率更高些
+
+2015-11-11 15:42:22
+以上
+但是这么debug起来挺方便的，以后性能成为瓶颈的时候再说吧，，位操作应该还挺麻烦的——主要是bit stuffing要死
+
+现在NIC也做好了——就是说link layer中NIC负责的那部分包括
+    framing (preamble/postamble)
+    bit stuffing
+以及NIC与OS的接口(send/recv)，与physical port的接口(send/recv)
+都ok了
+
+下来就可以做flow control啦
+...是不是the little book of semaphores又要放了....
