@@ -93,16 +93,10 @@ def put(s='', *args, **kwargs):
         s = ' '.join(map(fmt, (s,) + args))
     sys.stdout.write(s + '\n')
 
-class Bunch(dict):
+class Bunch(object):
 
     def __init__(self, **kwargs):
-        super(Bunch, self).__init__()
-        self.update(kwargs)
         self.__dict__.update(kwargs)
-
-    def __repr__(self):
-        #return '{' + ', '.join('{}: {}'.format(k, v) for k, v in self.items()) + '}'
-        return super(Bunch, self).__repr__()
 
 class PatternDetector(object):
 

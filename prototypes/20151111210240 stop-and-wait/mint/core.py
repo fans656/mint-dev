@@ -49,20 +49,6 @@ class Entity(object):
         self.name = name or network.network.new_name(self)
         self.ports = [Port(self) for _ in range(n_ports)]
         network.network.add(self)
-        for mint_callback_name in ('setup', 'outputer', 'inputer',
-                'output', 'input'):
-            setattr(self, mint_callback_name + 's', [])
-        for method_name in dir(self):
-            method = getattr(self, method_name)
-            try:
-                callback_type = method._mint_data.type
-            except AttributeError:
-                pass
-            else:
-                self._mint_get_callbacks(callback_type).append(method)
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.name)
-
-    def _mint_get_callbacks(self, callback_type):
-        return getattr(self, callback_type + 's')

@@ -81,7 +81,7 @@ def random_bits(length=8):
     return ''.join('1' if random.randint(0,1) else '0'
             for _ in range(length))
 
-def put(s='', *args, **kwargs):
+def put(s, *args, **kwargs):
     def fmt(t):
         if isinstance(t, Queue.Queue):
             t = view_queue(t)
@@ -93,16 +93,10 @@ def put(s='', *args, **kwargs):
         s = ' '.join(map(fmt, (s,) + args))
     sys.stdout.write(s + '\n')
 
-class Bunch(dict):
+class Bunch(object):
 
     def __init__(self, **kwargs):
-        super(Bunch, self).__init__()
-        self.update(kwargs)
         self.__dict__.update(kwargs)
-
-    def __repr__(self):
-        #return '{' + ', '.join('{}: {}'.format(k, v) for k, v in self.items()) + '}'
-        return super(Bunch, self).__repr__()
 
 class PatternDetector(object):
 

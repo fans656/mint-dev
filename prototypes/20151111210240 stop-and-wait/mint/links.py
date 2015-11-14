@@ -17,22 +17,23 @@ class Link(Entity):
             self.connect(port1, self.ports[0])
             self.connect(port2, self.ports[1])
         self.latency = latency
+        self.setup()
 
-    def connect(self, port1, port2):
-        port1.peer_with(port2)
-
-    @mint.setup
     def setup(self):
         preamble = [0] * self.latency
         self.out0 = deque(preamble)
         self.out1 = deque(preamble)
+        return self.out0, self.out1
 
-    @mint.output
-    def output(self):
-        self.ports[1].send(self.out0.popleft())
-        self.ports[0].send(self.out1.popleft())
+    def connect(self, port1, port2):
+        port1.peer_with(port2)
 
-    @mint.input
-    def input(self):
-        self.out0.append(self.ports[0].recv())
-        self.out1.append(self.ports[1].recv())
+    def run(self):
+        out0, out1 = self.setup()
+        while True:
+            self.ports[1].send(out0.popleft())
+            self.ports[0].send(out1.popleft())
+            mint.wait(0)
+            out0.append(self.ports[0].recv())
+            out1.append(self.ports[1].recv())
+            mint.wait(0)

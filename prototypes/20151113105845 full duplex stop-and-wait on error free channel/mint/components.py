@@ -18,10 +18,10 @@ class NIC(Entity):
         self.port = self.ports[0]
         self._max_frame_size = 64
         self.buffer_size = self._max_frame_size * 8
-        self.obuffer_used = 0
-        self.ibuffer_used = 0
+        self._obuffer_used = 0
+        self._ibuffer_used = 0
         self._oframes = deque()
-        self.iframes = deque()
+        self._iframes = deque()
         self._oframe = deque()
         self._iframe = deque()
         self._in_frame = False
@@ -35,23 +35,22 @@ class NIC(Entity):
     def send(self, frame):
         if len(frame) > self._max_frame_size:
             raise NIC.FrameTooLarge()
-        while not self.fit(frame, self.obuffer_used):
+        while not self.fit(frame, self._obuffer_used):
             mint.wait(0)
         self._oframes.append(frame)
-        self.obuffer_used += len(frame)
+        self._obuffer_used += len(frame)
 
     def recv(self):
         while True:
             try:
-                frame = self.iframes.popleft()
-                self.ibuffer_used -= len(frame)
+                frame = self._iframes.popleft()
+                self._ibuffer_used -= len(frame)
                 return frame
             except IndexError:
                 mint.wait(0)
 
     def drop_kth_frame(self, *kths):
         self.kth_frames_to_drop |= set(kths)
-    drop = drop_kth_frame
 
     @mint.setup
     def setup(self):
@@ -77,7 +76,7 @@ class NIC(Entity):
     def pull_frame(self):
         try:
             frame = self._oframes.popleft()
-            self.obuffer_used -= len(frame)
+            self._obuffer_used -= len(frame)
             self._oframe.clear()
             self._oframe.extend(self.FLAG)
             for byte in frame:
@@ -113,7 +112,7 @@ class NIC(Entity):
                     self._in_frame = False
 
     def ok_to_handout(self, frame):
-        if not self.fit(frame, self.ibuffer_used):
+        if not self.fit(frame, self._ibuffer_used):
             return False
         if self.specified_for_drop(frame):
             return False
@@ -127,8 +126,8 @@ class NIC(Entity):
 
     def handout(self, frame):
         self.n_handed_frames += 1
-        self.iframes.append(frame)
-        self.ibuffer_used += len(frame)
+        self._iframes.append(frame)
+        self._ibuffer_used += len(frame)
 
     def discard(self, frame):
         self.n_dropped_frames += 1
@@ -148,4 +147,4 @@ class NIC(Entity):
             utils.put(self.host, 'i ', join(self._iframe))
         if 'ii' in fmt:
             utils.put(self.host, 'is', ' '.join(
-                utils.format(f, 'bin') for f in self.iframes))
+                utils.format(f, 'bin') for f in self._iframes))

@@ -38,10 +38,7 @@ def wait(n_steps=1):
         t.inform.get()
 
 def timer(*args, **kwargs):
-    return network.network.timer(*args, **kwargs)
-
-def kill(*args, **kwargs):
-    return network.network.kill(*args, **kwargs)
+    network.network.timer(*args, **kwargs)
 
 def link(*args, **kwargs):
     return Link(*args, **kwargs)
@@ -63,11 +60,7 @@ def _gen_decorator(name):
         def deco_(f):
             f._mint_data = utils.Bunch(type=name, priority=priority)
             return f
-        if callable(priority):
-            f = priority
-            return deco_(f)
-        else:
-            return deco_
+        return deco_
     deco.func_name = name
     return deco
 
@@ -79,4 +72,3 @@ def debug(f):
 
 from mint.devices import Host, Hub
 from mint.links import Link
-from mint.protocols import Protocol

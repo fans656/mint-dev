@@ -345,3 +345,83 @@ aggressive的protocol可能会丢一些包，不过相应地就会消耗更多�
 
 下来就可以做flow control啦
 ...是不是the little book of semaphores又要放了....
+
+2015-11-12 08:36:47
+一个刚想到的关于delimiter的事情，在non error free的信道上，以及假设preamble == postamble 的条件下:
+对于连续的frames，前一个的postamble应该与后一个的preamble合二为一
+对于不连续的frames，每一个应该都包含preamble和postamble
+这是为了把链路上的frames分隔成下面的样子
+
+    | frame 1 | non data | frame 2 | frame 3 |
+
+假如 frame 1 的postamble被corrupted了
+
+    | frame 1   non data | frame 2 | frame 3 |
+
+frame 1 会因为 check sum 被丢弃，但不影响之后 frame 2, 3 的接收
+
+如果不这么划分，而是每个frame都带完整的 preamble/postamble 的话
+
+    | frame 1 | non data | frame 2 || frame 3 |
+
+同上corrupted就会变成
+
+    | frame 1   non data | _______ || _______ |
+                                    \-- recognized as a empty frame
+
+或者另一种情况：
+    | frame 1 | non data | frame 2 | non data | frame 3 |
+    | frame 1   non data | _______ | non data | _______ |
+
+这样整个后面的frame都没法正常接收了
+
+2015-11-12 09:00:29
+目前做到了只含delimiter的frame发送，链路是假设error free的
+OS负责的网络层没有任何header和checksum
+用stop-and-wait实现流量控制
+
+这里的场景就像，我想给Bob发frames，但是我开始时是不知道Bob的buffer能容纳多少frame的(根据frame的大小不同，这里的容量可以是动态的——实际应该以当时仍能容纳多少个最大size的frame定义)
+我可以假定Bob至少能容纳一个frame——这个可以是硬件制造商保证的，它们的设备至少要符合某种协议的规定(比如Ethernet的1500)
+
+https://en.wikipedia.org/wiki/Maximum_transmission_unit
+或者可以动态决定
+
+反正吧，暂时为了简化问题，我们就假设Bob至少可以容纳一个frame
+所以我就每发一个然后等他ACK——在等到ACK之前我不会发下一个以免因为他那边容量不足而让我白发
+这个就是stop-and-wait
+
+以上是简单的单向的场景，实际中收发是双向的
+那么我就得有办法识别我收到的frame究竟是对方传的数据还是ACK？
+于是，加上我们error free、point to point的model中第一个link layer的header：
+    IS_ACK
+这个信息其实1bit就解决了，但是NIC以上都是面向byte的，所以就用一个byte——只用其中一位
+
+       7     6     5     4     3     2     1     0
+    -------------------------------------------------
+    |     |     |     |     |     |     |     | ACK |
+    -------------------------------------------------
+
+现在，frame 的样子是：
+    
+    ACK + PAYLOAD
+
+ACK字节今后可能会用到其他位，所以判断收到的frame是数据还是ACK的方法是
+    
+    is_ack = ACK_BYTE & 0x1
+
+于是，双向的stop-and-wait仍然是，收到ACK再发下一个，只不过现在不怕对面有数据frame过来了
+
+2015-11-12 17:45:18
+模拟器的核心模型(core model)一改再改，从开始的点对点位传输到现在的流量控制，不断有新的需求导致核心模型无法支持，遂改之
+至今已三五番，略心力交瘁
+但是每次改好满足新的场景后都很有成就感
+跟拉拉说起时云“所以证明这个东西是有难度的”
+
+现在，NIC已经实现——每个host上的NIC跑一个线程
+但是到OS这里又不适合了——OS上要跑协议栈
+需要新的模型，目前想了一个，但不知道实现后是不是能用/好用
+估计到最后的real application in virtual network的场景时还需要新的模型，而且在这之前也会仍不断地更替模型
+但是当最后完成时，过程中解决的那些问题想然都可以做一篇研究生的小论文了——甚至毕业论文？倒是不知道这种工程类闭门造车的项目跟论文那种破东西搭不搭调
+
+2015-11-13 10:28:11
+ok, 下来要实现一个timer和指定drop frame的功能

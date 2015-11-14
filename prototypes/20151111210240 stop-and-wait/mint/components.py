@@ -18,14 +18,13 @@ class NIC(Entity):
         self.port = self.ports[0]
         self._max_frame_size = 64
         self.buffer_size = self._max_frame_size * 8
-        self.obuffer_used = 0
-        self.ibuffer_used = 0
+        self._obuffer_used = 0
+        self._ibuffer_used = 0
         self._oframes = deque()
-        self.iframes = deque()
+        self._iframes = deque()
         self._oframe = deque()
         self._iframe = deque()
         self._in_frame = False
-        self.kth_frames_to_drop = set()
         self.n_detected_frames = 0
         self.n_handed_frames = 0
         self.n_dropped_frames = 0
@@ -35,49 +34,47 @@ class NIC(Entity):
     def send(self, frame):
         if len(frame) > self._max_frame_size:
             raise NIC.FrameTooLarge()
-        while not self.fit(frame, self.obuffer_used):
+        while not self.fit(frame, self._obuffer_used):
             mint.wait(0)
         self._oframes.append(frame)
-        self.obuffer_used += len(frame)
+        self._obuffer_used += len(frame)
 
     def recv(self):
         while True:
             try:
-                frame = self.iframes.popleft()
-                self.ibuffer_used -= len(frame)
+                frame = self._iframes.popleft()
+                self._ibuffer_used -= len(frame)
                 return frame
             except IndexError:
                 mint.wait(0)
 
-    def drop_kth_frame(self, *kths):
-        self.kth_frames_to_drop |= set(kths)
-    drop = drop_kth_frame
-
-    @mint.setup
-    def setup(self):
+    def run(self):
         self._flag_detector = utils.PatternDetector(self.FLAG)
         self._stuffing_bit_detector = utils.PatternDetector(self.STUFFING)
         self._successive_bits_detector = utils.PatternDetector(self.SUCCESSIVE)
-
-    @mint.output
-    def output(self):
-        if not self._oframe:
-            self.pull_frame()
-        try:
-            obit = self._oframe.popleft()
-        except IndexError:
-            obit = 0
-        self.port.send(obit)
-
-    @mint.input
-    def input(self):
-        ibit = self.port.recv()
-        self.process_input(ibit)
+        while True:
+            # output phase and input phase correspond to
+            # the two network.step(workers)
+            # so wait(0) means go to next input phase (from output phase)
+            # or go to next output phase (from input phase)
+            # use context manager like this will increase the readability
+            # it's actually just wait(0) in __exit__ of the context manager
+            with mint.output_phase:
+                if not self._oframe:
+                    self.pull_frame()
+                try:
+                    obit = self._oframe.popleft()
+                except IndexError:
+                    obit = 0
+                self.port.send(obit)
+            with mint.input_phase:
+                ibit = self.port.recv()
+                self.process_input(ibit)
 
     def pull_frame(self):
         try:
             frame = self._oframes.popleft()
-            self.obuffer_used -= len(frame)
+            self._obuffer_used -= len(frame)
             self._oframe.clear()
             self._oframe.extend(self.FLAG)
             for byte in frame:
@@ -105,47 +102,21 @@ class NIC(Entity):
                     self.frame_ended = True
                     frame = ''.join(chr(utils.to_byte(bits))
                             for bits in utils.group(self._iframe, 8))[:-1]
-                    if self.ok_to_handout(frame):
+                    if self.fit(frame, self._ibuffer_used):
                         self.handout(frame)
                     else:
                         self.discard(frame)
                     self._iframe.clear()
                     self._in_frame = False
 
-    def ok_to_handout(self, frame):
-        if not self.fit(frame, self.ibuffer_used):
-            return False
-        if self.specified_for_drop(frame):
-            return False
-        return True
-
-    def specified_for_drop(self, _):
-        return self.n_detected_frames in self.kth_frames_to_drop
-
     def fit(self, frame, n_used):
         return self.buffer_size - n_used >= len(frame)
 
     def handout(self, frame):
         self.n_handed_frames += 1
-        self.iframes.append(frame)
-        self.ibuffer_used += len(frame)
+        self._iframes.append(frame)
+        self._ibuffer_used += len(frame)
 
     def discard(self, frame):
         self.n_dropped_frames += 1
         self.dropped_frame = list(frame)
-
-    def show(self, fmt='iioo'):
-
-        def join(frame):
-            return ''.join('1' if bit else '0' for bit in frame)
-
-        if 'oo' in fmt:
-            utils.put(self.host, 'os', ' '.join(
-                utils.format(f, 'bin') for f in self._oframes))
-        if 'o' in fmt:
-            utils.put(self.host, 'o ', join(self._oframe))
-        if 'i' in fmt:
-            utils.put(self.host, 'i ', join(self._iframe))
-        if 'ii' in fmt:
-            utils.put(self.host, 'is', ' '.join(
-                utils.format(f, 'bin') for f in self.iframes))
