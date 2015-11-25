@@ -1,151 +1,130 @@
 from collections import deque
-
 import mint
-from mint.core import Entity
-from mint import utils
+from mint import simulation, utils
+from mint.utils import bunch
 
-class NIC(Entity):
+class Tip(object):
 
-    class FrameTooLarge(Exception): pass
+    def __init__(self):
+        self.peer = None
+        self._osymbol = 0
+        self.isymbol = 0
 
-    FLAG = (0,1,1,1,1,1,1,0)
-    STUFFING = (1,1,1,1,1,0)
-    SUCCESSIVE = (1,1,1,1,1)
+    @property
+    def osymbol(self):
+        return self._osymbol
 
-    def __init__(self, host):
-        super(NIC, self).__init__(name=host.name, n_ports=1)
-        self.host = host
-        self.port = self.ports[0]
-        self._max_frame_size = 64
-        self.buffer_size = self._max_frame_size * 8
-        self.obuffer_used = 0
-        self.ibuffer_used = 0
-        self._oframes = deque()
+    @osymbol.setter
+    def osymbol(self, symbol):
+        self._osymbol = symbol
+        if self.peer:
+            self.peer.isymbol = symbol
+
+    def peer_with(self, tip):
+        self.peer = tip
+        self.peer.peer = self
+
+    @property
+    def status(self):
+        return bunch(isymbol=self.isymbol, osymbol=self.osymbol)
+
+class Entity(object):
+
+    def __init__(self, n_tips):
+        self.tips = [Tip() for _ in xrange(n_tips)]
+        mint.add(self)
+
+    def __repr__(self):
+        return '{} {}'.format(type(self).__name__, self.index)
+
+class NIC(object):
+
+    def __init__(self, tip):
+        super(NIC, self).__init__()
+        self.tip = tip
+        self.oframes = deque()
         self.iframes = deque()
-        self._oframe = deque()
-        self._iframe = deque()
-        self._in_frame = False
-        self.kth_frames_to_drop = set()
-        self.n_detected_frames = 0
-        self.n_handed_frames = 0
-        self.n_dropped_frames = 0
-        self.dropped_frame = None
-        self.frame_ended = False
+        mint.process(self.run, priority=simulation.NIC_PRIORITY)
 
-    def send(self, frame):
-        if len(frame) > self._max_frame_size:
-            raise NIC.FrameTooLarge()
-        while not self.fit(frame, self.obuffer_used):
-            mint.wait(0)
-        self._oframes.append(frame)
-        self.obuffer_used += len(frame)
+    def send(self, data):
+        self.oframes.append(data)
 
     def recv(self):
         while True:
             try:
-                frame = self.iframes.popleft()
-                self.ibuffer_used -= len(frame)
-                return frame
+                return self.iframes.popleft()
             except IndexError:
-                mint.wait(0)
+                mint.elapse(1)
 
-    def drop_kth_frame(self, *kths):
-        self.kth_frames_to_drop |= set(kths)
-    drop = drop_kth_frame
+    def run(self):
+        while True:
+            try:
+                frame = self.oframes.popleft()
+            except IndexError:
+                frame = 0
+            self.tip.osymbol = frame
+            if self.tip.isymbol != 0:
+                self.iframes.append(self.tip.isymbol)
+            mint.elapse(1)
 
-    @mint.setup
-    def setup(self):
-        self._flag_detector = utils.PatternDetector(self.FLAG)
-        self._stuffing_bit_detector = utils.PatternDetector(self.STUFFING)
-        self._successive_bits_detector = utils.PatternDetector(self.SUCCESSIVE)
+    @property
+    def status(self):
+        return bunch(
+            oframes=self.oframes,
+            iframes=self.iframes,
+            tip=self.tip,
+        )
 
-    @mint.output
-    def output(self):
-        if not self._oframe:
-            self.pull_frame()
-        try:
-            obit = self._oframe.popleft()
-        except IndexError:
-            obit = 0
-        self.port.send(obit)
+class Host(Entity):
 
-    @mint.input
-    def input(self):
-        ibit = self.port.recv()
-        self.process_input(ibit)
+    role = 'Host'
 
-    def pull_frame(self):
-        try:
-            frame = self._oframes.popleft()
-            self.obuffer_used -= len(frame)
-            self._oframe.clear()
-            self._oframe.extend(self.FLAG)
-            for byte in frame:
-                for bit in utils.to_bits(ord(byte)):
-                    self._oframe.append(bit)
-                    if self._successive_bits_detector.feed(bit):
-                        self._oframe.append(0)
-            self._successive_bits_detector.clear()
-            self._oframe.extend(self.FLAG)
-        except IndexError:
-            pass
+    def __init__(self):
+        super(Host, self).__init__(n_tips=1)
+        self.nic = NIC(self.tips[0])
 
-    def process_input(self, ibit):
-        self.frame_ended = False
-        if not self._in_frame:
-            if self._flag_detector.feed(ibit):
-                self._in_frame = True
-        else:
-            flag = self._flag_detector.feed(ibit)
-            stuffing = self._stuffing_bit_detector.feed(ibit)
-            if flag or not stuffing:
-                self._iframe.append(ibit)
-                if flag:
-                    self.n_detected_frames += 1
-                    self.frame_ended = True
-                    frame = ''.join(chr(utils.to_byte(bits))
-                            for bits in utils.group(self._iframe, 8))[:-1]
-                    if self.ok_to_handout(frame):
-                        self.handout(frame)
-                    else:
-                        self.discard(frame)
-                    self._iframe.clear()
-                    self._in_frame = False
+    @property
+    def status(self):
+        return bunch(nic=self.nic)
 
-    def ok_to_handout(self, frame):
-        if not self.fit(frame, self.ibuffer_used):
-            return False
-        if self.specified_for_drop(frame):
-            return False
-        return True
+class Link(Entity):
 
-    def specified_for_drop(self, _):
-        return self.n_detected_frames in self.kth_frames_to_drop
+    role = 'Link'
 
-    def fit(self, frame, n_used):
-        return self.buffer_size - n_used >= len(frame)
+    def __init__(self, a, b, latency=1):
+        super(Link, self).__init__(n_tips=2)
+        # there's an inherent latency of 1 due to the simulation model
+        if latency < 1:
+            latency = 1
+        latency -= 1
+        self.latency = latency
+        a.peer_with(self.tips[0])
+        b.peer_with(self.tips[1])
+        mint.process(self.run, priority=simulation.LINK_PRIORITY)
 
-    def handout(self, frame):
-        self.n_handed_frames += 1
-        self.iframes.append(frame)
-        self.ibuffer_used += len(frame)
+    def run(self):
+        initial = [0] * self.latency
+        pipe0to1 = deque(initial)
+        pipe1to0 = deque(initial)
+        while True:
+            self.transfer(self.tips[0], self.tips[1], pipe0to1)
+            self.transfer(self.tips[1], self.tips[0], pipe1to0)
+            mint.elapse(1)
 
-    def discard(self, frame):
-        self.n_dropped_frames += 1
-        self.dropped_frame = list(frame)
+    def transfer(self, itip, otip, dq):
+        dq.append(itip.isymbol)
+        otip.osymbol = dq.popleft()
 
-    def show(self, fmt='iioo'):
+    @property
+    def status(self):
+        return bunch(latency=self.latency)
 
-        def join(frame):
-            return ''.join('1' if bit else '0' for bit in frame)
-
-        if 'oo' in fmt:
-            utils.put(self.host, 'os', ' '.join(
-                utils.format(f, 'bin') for f in self._oframes))
-        if 'o' in fmt:
-            utils.put(self.host, 'o ', join(self._oframe))
-        if 'i' in fmt:
-            utils.put(self.host, 'i ', join(self._iframe))
-        if 'ii' in fmt:
-            utils.put(self.host, 'is', ' '.join(
-                utils.format(f, 'bin') for f in self.iframes))
+def link(a, b, *args, **kwargs):
+    def to_tip(o):
+        if isinstance(o, Host):
+            return o.nic.tip
+        elif isinstance(o, NIC):
+            return o.tip
+        elif isinstance(o, Tip):
+            return o
+    return Link(to_tip(a), to_tip(b), *args, **kwargs)

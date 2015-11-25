@@ -49,7 +49,7 @@ class Entity(object):
         self.name = name or network.network.new_name(self)
         self.ports = [Port(self) for _ in range(n_ports)]
         network.network.add(self)
-        for mint_callback_name in ('setup', 'outputer', 'inputer',
+        for mint_callback_name in ('setup', 'sender', 'recver',
                 'output', 'input'):
             setattr(self, mint_callback_name + 's', [])
         for method_name in dir(self):

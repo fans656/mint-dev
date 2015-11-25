@@ -7,27 +7,6 @@ from collections import defaultdict
 import mint
 from mint import utils
 
-class Timer(object):
-
-    def __init__(self, n_laps, callback, *args, **kwargs):
-        self.n_laps = n_laps
-        self.callback = functools.partial(callback, *args, **kwargs)
-        self.now = -1
-
-    def start(self):
-        self.now = mint.now() + self.n_laps
-
-    def stop(self):
-        self.now = -1
-
-    @property
-    def stopped(self):
-        return self.now == -1
-
-    def trigger(self):
-        self.callback()
-    __call__ = trigger
-
 class Network(object):
 
     class Stopped(Exception): pass
@@ -35,11 +14,10 @@ class Network(object):
     def __init__(self):
         self.names = defaultdict(lambda: -1)
         self.debug = lambda: None
-        self.timers = set()
-        self.timer_threads = []
+        self.timers = []
         for attr_name in ('entities', 'setups', 'outputs',
                 'transfers', 'inputs', 'actors',
-                'outputers', 'inputers'):
+                'senders', 'recvers'):
             setattr(self, attr_name, [])
 
     def new_name(self, entity):
@@ -64,15 +42,15 @@ class Network(object):
         self.install_callbacks()
         self.install_threads()
         self.call(self.setups)
-        start_threads(self.actors, *(self.outputers + self.inputers))
+        start_threads(self.actors, *(self.senders + self.recvers))
         self.step(self.actors)
         for self.now in itertools.count():
-            self.step(*self.outputers)
+            self.trigger_timers()
+            self.step(*self.senders)
             self.call(self.outputs)
             self.call(self.transfers)
             self.call(self.inputs)
-            self.step(*self.inputers)
-            self.trigger_timers()
+            self.step(*self.recvers)
             self.debug()
             self.now += 1
             self.step(self.actors)
@@ -80,18 +58,18 @@ class Network(object):
                 break
 
     def finished(self):
-        return not self.actors
+        return not (self.actors or self.timers)
 
     def install_callbacks(self):
         for e in self.entities:
-            for name in ('setup', 'output', 'input', 'outputer', 'inputer'):
+            for name in ('setup', 'output', 'input', 'sender', 'recver'):
                 getattr(self, name + 's').extend(e._mint_get_callbacks(name))
 
     def install_threads(self):
-        self.outputers[:] = list(reversed([[self.worker(f) for f in fs]
-                for fs in self.group_by_priority(self.outputers)]))
-        self.inputers[:] = [[self.worker(f) for f in fs]
-                for fs in self.group_by_priority(self.inputers)]
+        self.senders[:] = list(reversed([[self.worker(f) for f in fs]
+                for fs in self.group_by_priority(self.senders)]))
+        self.recvers[:] = [[self.worker(f) for f in fs]
+                for fs in self.group_by_priority(self.recvers)]
 
     def group_by_priority(self, fs):
         return [list(g) for _, g in itertools.groupby(fs,
@@ -106,26 +84,48 @@ class Network(object):
             wait_threads(threads)
 
     def trigger_timers(self):
-        self.timer_threads[:] = [t for t in self.timer_threads if t.is_alive()]
-        threads = []
+        self.timers[:] = [t for t in self.timers if not t.dead]
         for timer in self.timers:
-            if not timer.stopped:
-                if self.now == timer.now:
-                    threads.append(self.worker(timer.trigger, daemon=False))
-        self.timer_threads.extend(threads)
-        start_threads(threads)
-        wait_threads(self.timer_threads)
+            if not timer.stopped and self.now == timer.now:
+                timer.trigger()
 
     def title(self):
         utils.put('=' * 25 + ' {}'.format(self.now))
 
-    def timer(self, n_laps, callback, *args, **kwargs):
-        timer = Timer(n_laps, callback, *args, **kwargs)
-        self.timers.add(timer)
+    def timer(self, n_laps, events, event):
+        timer = Timer(n_laps, events, event)
+        self.timers.append(timer)
         return timer
 
     def kill(self, timer):
         self.timers.discard(timer)
+
+class Timer(object):
+
+    def __init__(self, n_laps, events, event):
+        self.dead = False
+        self.n_laps = n_laps
+        self.events = events
+        self.event = event
+        self.now = -1
+
+    def start(self):
+        self.now = mint.now() + self.n_laps
+
+    def stop(self):
+        self.now = -1
+
+    def kill(self):
+        self.dead = True
+
+    @property
+    def stopped(self):
+        return self.now == -1
+
+    def trigger(self):
+        self.events.append(self.event)
+        self.stop()
+    __call__ = trigger
 
 def runs(entities):
     return (e.run for e in entities if hasattr(e, 'run'))

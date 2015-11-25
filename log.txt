@@ -425,3 +425,248 @@ ACK字节今后可能会用到其他位，所以判断收到的frame是数据还
 
 2015-11-13 10:28:11
 ok, 下来要实现一个timer和指定drop frame的功能
+
+2015-11-15 08:47:57
+stop-and-wait 的缺点在于，即使 receiver 有足够的处理能力，sender 发出的包之间也最少间隔一个 RTT (round-trip time)
+而使用sliding window时，只要window设的够大，就可能在window中的frame还没发完之前收到ACK，这样window往后sliding——如果后续ACK都及时到达，那么sender就可以连续发送，达到线路允许的最高效率
+那么window应该设置多大呢？这可能就是不同的sliding window protocols的区别之处了——估摸着还有自适应的算法
+
+2015-11-15 23:21:49
+https://en.wikipedia.org/wiki/Media_access_control
+https://en.wikipedia.org/wiki/Channel_access_method
+这里提到 half-duplex point-to-point links 也属于 multiple access media
+想一想就明白了：
+比如一根铜线，我在这头加电，那头就会收到信号，但如果那头同时也在加电，那么两边就都无法正确收到对方的信号了
+同一时间只能有一方发送的 point-to-point link ，就是 half-duplex link
+
+2015-11-15 23:31:44
+https://en.wikipedia.org/wiki/Logical_link_control
+flow control 和 ARQ(Auto Repeat reQuest)(包含了error detection/correction) 都是属于 LLC(Logical Link Control) 上子层的
+addressing, channel access control 等工作放在下子层MAC(Media Access Control)层中做
+
+这里还说，modern网络一般都不在 link layer 做error detection和flow control之类的了(一般放在传输层或者应用层做)
+所以现在LLC只负责multiplexing，但是现今除了IP几乎其他网络层协议都舍弃了，所以其实LLC简直没什么好做的了已经
+
+2015-11-16 08:18:42
+https://en.wikipedia.org/wiki/Media_access_control
+这里说，“A MAC layer is not required in full-duplex point-to-point communication, but is often available in the equipment for compatibility reasons”
+当时做 2-hosts 1-link 时候就现在想，这种从一条线路出去只有一个目的地的链接，frame里是不需要地址的——现在看来果然不需要
+link layer 只负责直连的两个节点(通过repeaters, hubs, switches连接的也算直连)间的通信，更远的一条path上的通信是路由器负责的(或者说是IP负责的)
+
+http://www.dummies.com/how-to/content/network-basics-collision-overview.html
+这里说的还行，提到“signal combines”
+老觉得没理解collision发生的具体方式有点儿虚，但估计其实只理解到collision发生时的数据会坏掉这一层就好了
+
+https://learningnetwork.cisco.com/thread/34158
+http://superuser.com/questions/558026/if-two-devices-are-emitting-a-wifi-signal-in-the-same-frequency-at-the-same-time
+
+2015-11-16 13:35:21
+channel allocation 中有一个点是，receiver必须知道自己收到的frame有错——之前是信道错误导致bit flip/bit missing之类的
+现在是因为collision导致的corrupted frame——当然，collision可能导致任何错误，比如preamble被破坏以至根本detect不到这个frame
+
+于是，之前用直接NIC上的drop模拟出错丢包乃至直接假设为error free信道的做法现在都不适用了
+必须要checksum来检测corrupted frame
+也就是说，checksum不止是用来检测信号错误的，哪怕信道上没有错误(error free)，但因为collision domain里冲突的发生，仍然会出现corrupted frame
+
+2015-11-16 13:45:07
+现在先速度点步进——等到协议层堆上去，模型大方向不差，然后做出GUI和完善的debug机制，然后细细地再走一遍
+
+2015-11-16 16:00:13
+自己琢磨着概念性实现了下switch——然后意识到这家伙是 store-and-forward 的，且需要inspect link layer 的 header 信息，比如MAC地址
+而hub连buffer都不需要，它根本是工作在物理层的，只能看到baud
+
+http://networkengineering.stackexchange.com/questions/1592/what-happens-when-2-computers-transmits-at-the-same-time-to-a-3rd-one-in-a-full/19788#19788
+这里验证了 switch 是存储转发的，正因为此，所以不会有 collision 发生，不同 port 之间属于 different collision domain
+但也因为存储转发需要buffer，所以 switch 可能 run out of buffer (比如7个人同时向另一个人发，目标人的outgoing buffer很快会被填满，之后就得开始丢包)
+那么猜测 switch 上也实现了 flow control，虽然对于host来说，switch本身是透明的——即没有NIC，没有MAC地址等等
+
+评论里还提到具体实现上因为性能追求，会做成 cut-through 即看到 dst MAC 就开始转发，但是如果因为某些原因发不了(e.g. outgoing queue full)，就 fallback 到 store-and-forward 模式
+
+2015-11-16 16:33:39
+https://en.wikipedia.org/wiki/Ethernet_flow_control
+这里明确了几点：
+1. switch 可以进行 flow control
+2. 因为存储转发所以不同端口可以使用不同速率，但这可能造成高速ingress link耗尽低速egress link的outgoing buffer
+3. 几个ingress link的数据aggregate起来也会造成egress link的buffer exhaustion
+4. 但是ingress/egress link的flow control比host之间的端到端情景要complex一些：因为不是所有ingress来的数据都对某个egress link上的congestion有贡献，所以简单地让ingress link对端降速会错杀好人
+
+https://en.wikipedia.org/wiki/Head-of-line_blocking
+这里明确了 input port 有 input buffer
+但是 output port 不一定有 output buffer —— 不过这样会造成HOL(Head of line blocking)
+比如说i-1端口和i-4号端口队列头部都有一个要给o-2端口发的frame，算法选择了先发i-4的，那么i-1的在i-4发送的时间里就得等着
+注意！这时i-1队列里所有不走o-2的frames也日了狗了都得因为队头那个要去o-2的家伙而等着，哪怕它们要去的o-7, o-8等等正空闲着
+是不是很像那些直行车等在了人家左转道上的情景？
+
+2015-11-16 17:06:50
+http://www.cisco.com/c/en/us/support/docs/switches/catalyst-6000-series-switches/23563-143.html
+搜 timeout 有真相
+switch 的 forwarding table (MAC addr -> port 字典) entry应该是有保质期的
+不然假设这么一个场景：
+    b 给 a 发了一包
+    switch 不知道 a 在哪，于是 flooding
+    a 收到，回发ACK给b
+    switch 记录 a 位于 port 1
+    a 拔下来了，插到了 port 3
+    b 又发了一包给 a
+    switch 从 port 1 转发出去，但 a 已经不在那儿了
+如果没有保质期，从此所有发给 a 的包都只会走 port1，而可怜的转移到port3的a永远也收不到给它的包了——除非它主动进行了向别人的通信，也许switch会更新a的entry
+
+http://searchnetworking.techtarget.com/answer/Bridge-vs-switch
+这里的视角挺有意思：它说对bridge来说，MAC地址其实不像门牌号，MAC只被用来确定它的主人位于哪个网络(port)
+
+之前思索的时候有点纳闷这个事情：看样子switch做的也是routing的工作，那么为什么还要IP层和routers? 是因为历史遗留？不同网络互连？
+这里提到一点：
+switch会进行flooding，而这对于大网络是不合适的，，router "forward a packet only in one general direction"
+a 连在 switch a 上，b 连在 switch b 上
+switch a 连到 switch b 和 switch c
+a 想给 b 发个frame，但 switch a 不知道 b 在哪，所以它 flood
+这个 frame 被同时 flood 给了 switch b 和 switch c
+switch b 可以把 frame deliver 到 b
+但是注意，switch c 也收到了这个 frame，它也会尝试 deliver to b，而从 switch c 出去可能是半个地球的网络，一路 flood 出去，本来 a 和 b 只隔着一个实验室，结果全球的网络都跑上了它们的 frame
+
+如果把 switch 换成 router，那么在 router a 这里就只会把 packet 发给 router b 而不会发给 router a
+所以 switch 和 router 的区别就是，在网络中，switch 的 deliver path 是树状的，而 router 只是一条 path
+所以 switch 只适合把小局域网组建成大局域网，更大的网络，为了不让局部通信泛滥全网，就要用 router 来连接子网
+
+
+https://learningnetwork.cisco.com/thread/41392
+这里说 bridge 和 switch "there is no difference except for the number of ports. A switch is nothing more than a multiport bridge."
+也有别的说法，不过感觉总的来说，没有逻辑上的区别
+
+2015-11-16 17:53:04
+哈，感觉之前明白了 switch 和 route 区别的那个例子可以做成将来 mint-gui 中的一个 project：
+显示两个 topology 相同的网络，只是一个 intersection 都是 switch 另一个都是 router
+在 host a 上点击发送，switch 网络上所有 host 都会被点亮一下
+而 router 网络中，只有途径 path 的LAN上的hosts会被点亮
+very demonstrative!
+
+2015-11-17 10:17:16
+书里说，"In practive, only switched Ethernet is used nowadays."
+也就是说，multiple access 的那些算法在 wired network 中几乎已经不用了
+倒是 wireless 会用，而且跟 wired 还不大一样
+
+2015-11-17 12:06:59
+半路上再次想要搞懂 电、电线、信号 等等
+下了本看上去挺卡通的介绍electronics的书，另外又去google voltage之类
+这里
+https://learn.sparkfun.com/tutorials/voltage-current-resistance-and-ohms-law
+
+2015-11-17 13:08:54
+https://learn.sparkfun.com/tutorials/what-is-electricity
+这篇可以理解电子、电流
+
+2015-11-17 15:11:59
+感觉还是难在短期或者说有限的精力投入下入门，所以先略过
+
+2015-11-17 17:01:32
+ethernet frame 中 destination address 放在 source address 前面，这样 switch 可以收到 dst 后就 cut-through 转发
+如果反过来，delay就会更大一些
+
+2015-11-17 17:33:32
+hub 逻辑上跟 bus 是一样的，可以想象把bus上每个跟host连接的端点处捏在一处，就变成了了hub
+但是有一点区别：
+hub 一个端口进来的信号，可以同时输出在所有其他端口上
+但 bus 上一个端点进来的信号，需要不同的传播时间到达其他端点上
+
+2015-11-17 22:30:11
+书里说switch entry除了dst address, port number外，还有最近更新时间
+然后，定期清理过旧的(a few minutes old)entry
+不过这也意味着，如果一个host静默了一段时间(即没有发包)，那么它就会被清理——此后发给它的包就得再次flood
+不过也只能这样，因为对switch来说，一个不说话的host可能有两种可能：1. 没说话；2. 死了 —— 它没法区分是哪一种，只能按 worst case 来，，否则就会出现之前说过的，host换了个port插上，但是永远收不到发给它的frame了
+
+switch 只看 dst address，不做CRC检查，所以用cut-through来减少frame通过switch时带来的latency
+
+2015-11-17 23:34:29
+之前尝试写switch的逻辑时感觉虽然它们用到了link layer protocol，但它们不需要MAC地址——反正switch对host来说是透明的
+但书里这儿说构造spanning tree的时候是需要每个switch给它们的邻居发送自己的MAC地址的
+那么这个地址是每个switch一个么还是每个port上的NIC一个？还是别的什么？
+
+2015-11-18 09:08:25
+https://en.wikipedia.org/wiki/IEEE_802.1Q
+看到VLAN的时候一直嘀咕802.1q的frame到底怎么跟legacy frame区分的
+这里说明了：802.1q header 中前2个字节叫做TPID，是一个固定的值(0x8100)
+也就是说，legacy frame里头，是不允许使用这个值的
+
+2015-11-18 09:15:16
+所以其实802.1q tag有两个不同的作用：
+1. 指定priority
+2. VLAN ID
+
+priority 总是指定的(0代表best effort，就是平常的包)，VLAN ID如果VID的12个比特全0的话，就是指示该frame不归属于任何VLAN
+
+拿到frame给人加了802.1q tag的switch，还要重做CRC计算，，这家伙引入不少latency呃
+VLAN这东西普通人一般用不到，所以802.1q能够backward compatible真是很不错的
+
+2015-11-19 10:57:22
+看到 interconnect network 这里，明白之前不能只用 switch 来构建 world wide network 的另一个原因是：there are different kinds of networks!
+比如 Ethernet 和 MPLS 的编址方式都不同！你想在跑 Ethernet 的 host 上发一个 frame 给 MPLS 上的主机，你都不知道地址该怎么填
+比如，Ethernet 要求 MAC 地址，但目的 host 的编址用的是手机号，那么这个手机号怎么往 Ethernet 的 header 里填嘛
+解决办法就是，所有 host 都在更高一层 layer 上使用 IP 编址
+低一层的 layer (link layer) 只负责在同质网络内部传输数据——比如把 frame 传给作为 gateway 的那个 router
+
+恩.. 之前说的 flooding 原因不能用 switch 构建全网——这并不是不能用MAC统一编址的必然原因，我还是可以用MAC作为任何host的编址，只是因为flooding，所以我用另一种设备 router 来组网就好了嘛
+但是 MAC 可能不支持 hierarchy？或者，电脑可以从一个LAN拔出啦接到另一个LAN上，而MAC总是固定的，这就破坏了 hierachy 划分
+加之上面说的，有些 host 是根本不用 MAC 地址的！
+总而言之，最好的办法是再加一层 layer，用IP统一编址
+
+2015-11-19 11:12:14
+学计算机网络有时候会给人一种在学人类科技发展史的感觉——看着人类在几十年的时间里蹒跚学步，用各种方法、技巧搭建起今天这个庞大而还尚不完美(远称不上完美)的 Internet
+
+2015-11-19 15:47:40
+https://learningnetwork.cisco.com/thread/15380
+每个 switch 都有自己的 MAC address，甚至 switch 的每个 port 都有自己的 MAC address
+
+http://serverfault.com/questions/515163/how-to-find-the-mac-address-of-the-switch-i-am-connected-to
+switch 分两种：unmanaged switch & managed switch
+unmanaged switch 是没有 MAC address 的
+managed switch 有(还可能很多)——正如前面链接里提到的，switch 的 MAC address 其实并不用于 link layer 的工作，，更多的是用于管理(以及spanning tree这个该叫什么来着？)
+
+http://networkengineering.stackexchange.com/questions/10899/why-each-and-every-single-port-on-layer-2-switches-need-to-have-its-own-mac-add
+恩.. split horizon rule
+
+2015-11-19 16:08:25
+看到 Strict/Loose source routing, Record route 等等 IP Options 的时候就想，妈蛋IHL只有4bits，最大能支持15个 header entry，默认又已经用掉5个，就剩下10个，，完了选项本身还要用掉一个，剩下能指定的IP最多也就9个，这哪够
+然后就看到书里说了，ARPANET创建的时候，没有任何packet会经过超过9个router，所以Options就这么设计了，，现在么，当然不够了
+
+2015-11-19 17:11:21
+p450 "Perhaps some day people will look back and fault the folks who designed the telephone number scheme and say: 'What idiots. Why didn't they include the planet number in the phone number?' But at the time, it did not seem necessary."
+真是感慨... 我们回头看classful addressing (of IPv4)时的感觉，正像未来的人类看我们的感觉
+
+2015-11-22 09:36:51
+之前几天不写重拾起来感觉有点儿把控不住那1000行代码了
+这次重写是因觉着了正交化的必要——可以把线程管理外包给 timpy (自己写的 thread 版的 simpy)
+以及，要简单！能分隔出去的特性尽量分隔出去，哪怕为此增加代码量，也要保持每个 logical unit 自身的紧凑——即只做一个概念下的事情
+
+下面是思索 timpy 的部分：
+
+a simulation has the following attributes at any moment:
+    
+    unscheduled events
+        unknown to sim-controller, kept by user, but may be scheduled
+        onto `timeline`
+    .timeline
+        keep scheduled events in ascending `now` order
+    .now
+        current simulation time
+    .events
+        events which has the same `now` with sim.now
+        all triggered but the waiters is still waiting to be resumed
+    .waiters
+        waiter threads of which waiting event has been triggered
+        eager to be resumed
+    .resumings
+        waiter threads which has the same priority
+
+the following methods do the actual advance of time
+
+    .step_single_waiter
+        resume a single waiter
+    
+    .step_priority_group
+        resume all the waiters with same current highest priority
+    
+    .step
+        resume until the waiters have a different `now`
+
+2015-11-22 17:00:48
+正好，需要实现一个 heap

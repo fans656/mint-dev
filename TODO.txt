@@ -57,3 +57,47 @@ done ) link follows when node moves
 
 2015-11-05 09:48:24
 ) make mint network capable of multiple runs
+
+2015-11-15 08:34:02
+) analyze performance under different parameters using piggybacking
+    p228 sliding control window
+
+2015-11-15 21:43:07
+) go back n & selective repeat (p242)
+
+2015-11-16 14:28:15
+) checksum to detect collided frames
+) ALOHA
+) 1-persistent CSMA
+) nonpersistent CSMA
+) p-persistent CSMA
+) CSMA/CD
+
+2015-11-16 17:55:16
+) [proj] difference between switch network & router network
+    (see log.txt 2015-11-16 17:55:24)
+
+2015-11-17 23:37:33
+) switch
+) switch spanning tree negotiation
+
+) [proj] difference between hub network & switch network
+
+2015-11-18 09:11:06
+) VLAN / 802.1q
+) [proj] VLAN aware portion of a network
+
+2015-11-19 15:38:08
+) SNMP
+    https://learningnetwork.cisco.com/thread/15380
+    https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol
+
+) ARP
+    host 发送 frame 之前，需要ARP来得到目的MAC地址
+
+) STP
+    https://en.wikipedia.org/wiki/Spanning_Tree_Protocol
+    
+) NAT
+
+) CIDR (RFC 4632)
