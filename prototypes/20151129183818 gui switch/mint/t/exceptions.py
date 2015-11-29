@@ -1,0 +1,1 @@
+class WouldBlock(Exception): pass
