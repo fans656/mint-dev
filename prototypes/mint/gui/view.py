@@ -33,11 +33,6 @@ class View(QGraphicsView):
         self._mode = val
         self.viewport().update()
 
-    @property
-    def center_pt(self):
-        pt = self.viewport().rect().center()
-        return self.mapToScene(pt)
-
     def keyPressEvent(self, ev):
         ch = ev.text()
         if ch == config.key['Step']:
@@ -60,7 +55,7 @@ class View(QGraphicsView):
         if self.mode == self.MODE_EVENT:
             if not self.thread or self.thread.isFinished():
                 self.thread = StepUntilSthHappend(sim)
-                self.thread.finished.connect(self.scene().update_status)
+                self.thread.finished.connect(self.refresh)
                 self.thread.start()
         elif self.mode == self.MODE_TIK_TOK:
             sim.step()
@@ -68,7 +63,11 @@ class View(QGraphicsView):
             sim.step(by=sim.Phase)
         else:
             log.error('{} mode not recognized'.format(self.mode))
+        self.refresh()
+
+    def refresh(self):
         self.scene().update_status()
+        self.viewport().update()
 
     def toggle_console(self):
         if not self.load_ok:
@@ -126,6 +125,5 @@ class StepUntilSthHappend(QThread):
     def run(self):
         while True:
             self.sim.step()
-            #log.debug('now is {}'.format(self.sim.now))
             if self.sim.finished or self.sim.stdout:
                 break

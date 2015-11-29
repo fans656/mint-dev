@@ -42,15 +42,8 @@ class Topology(object):
                 ))),
             ))
             item_states.append(item_state)
-        pt = self.view.center_pt
         info = OrderedDict((
-            ('view', OrderedDict([
-                ('mode', self.view.mode),
-                ('center', OrderedDict([
-                    ('x', pt.x()),
-                    ('y', pt.y())
-                ])),
-            ])),
+            ('view', {'mode': self.view.mode}),
             ('items', item_states),
         ))
         json.dump(info, open(self.fpath, 'w'), indent=4)
@@ -74,7 +67,5 @@ class Topology(object):
             console.visible = console_state['visible']
             console.has_frame = console_state['has_frame']
             item.setPos(state['x'], state['y'])
-        view_pt = info['view']['center']
-        #self.view.centerOn(view_pt['x'], view_pt['y'])
         self.view.mode = info['view']['mode']
         return True

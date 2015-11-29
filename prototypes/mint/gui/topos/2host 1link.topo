@@ -1,22 +1,18 @@
 {
     "view": {
-        "mode": "Event", 
-        "center": {
-            "x": 570.0, 
-            "y": 203.0
-        }
+        "mode": "Tik-Tok"
     }, 
     "items": [
         {
             "role": "Host", 
             "index": 0, 
-            "x": 261.0, 
-            "y": 119.0, 
+            "x": 50.0, 
+            "y": 115.0, 
             "console": {
-                "dx": -186.0, 
-                "dy": 74.0, 
-                "width": 454.0, 
-                "height": 240.0, 
+                "dx": -245.0, 
+                "dy": 65.0, 
+                "width": 387.0, 
+                "height": 217.0, 
                 "enabled": true, 
                 "has_frame": false, 
                 "visible": true
@@ -25,13 +21,13 @@
         {
             "role": "Host", 
             "index": 1, 
-            "x": 706.0, 
-            "y": 122.0, 
+            "x": 433.0, 
+            "y": 117.0, 
             "console": {
-                "dx": -95.0, 
-                "dy": 68.0, 
-                "width": 555.0, 
-                "height": 240.0, 
+                "dx": -44.0, 
+                "dy": 61.0, 
+                "width": 429.0, 
+                "height": 218.0, 
                 "enabled": true, 
                 "has_frame": false, 
                 "visible": true
@@ -43,13 +39,13 @@
             "x": 0.0, 
             "y": 0.0, 
             "console": {
-                "dx": -152.0, 
-                "dy": -58.0, 
-                "width": 567.0, 
-                "height": 51.0, 
-                "enabled": true, 
+                "dx": -102.0, 
+                "dy": -101.0, 
+                "width": 239.0, 
+                "height": 73.0, 
+                "enabled": false, 
                 "has_frame": false, 
-                "visible": true
+                "visible": false
             }
         }
     ]

@@ -15,6 +15,7 @@ class Tip(object):
     def __init__(self, host):
         self.host = host
         self.peer = None
+        self.link = None
         self._osymbol = 0
         self.isymbol = 0
 
@@ -28,9 +29,15 @@ class Tip(object):
         if self.peer:
             self.peer.isymbol = symbol
 
-    def peer_with(self, tip):
+    def peer_with(self, tip, by=None):
         self.peer = tip
         self.peer.peer = self
+        self.link = by
+        self.peer.link = by
+
+    @property
+    def peer_host(self):
+        return self.link.peer_of(self).host
 
     @property
     def status(self):
@@ -82,6 +89,24 @@ class Host(Entity):
         header = struct.pack('!BB', to, self.mac)
         self.framer.send(header + data)
 
+    def is_sending_to(self, entity):
+        peer_port = self.tip.peer_host.port_to(self.framer)
+        return self.sending_started and not peer_port.recving_finished
+
+    def port_to(self, framer):
+        return self.framer
+
+    def has_port(self, framer):
+        return self.framer == framer
+
+    @property
+    def sending_started(self):
+        return self.framer.sending_started
+
+    @property
+    def recving_finished(self):
+        return self.framer.recving_finished
+
 class Hub(Entity):
 
     def __init__(self, n_tips=3):
@@ -121,6 +146,19 @@ class Switch(Entity):
             for i, port in enumerate(self.ports)
         ]
         return r
+
+    def is_sending_to(self, entity):
+        peers_ports = zip(each(self.tips).peer_host, self.ports)
+        peer_port, port = next((p.port_to(pt), pt)
+                               for p, pt in peers_ports if p == entity)
+        return port.sending_started and not peer_port.recving_finished
+
+    def port_to(self, port):
+        return next(p for p in self.ports
+                    if p.tip.peer_host.has_port(port))
+
+    def has_port(self, port):
+        return port in self.ports
 
     class Routes(object):
 
@@ -174,11 +212,15 @@ class Link(Entity):
 
     def __init__(self, a, b, latency=0):
         super(Link, self).__init__(n_tips=2)
-        a.peer_with(self.tips[0]); self.tips[1].peer_with(b)
+        a.peer_with(self.tips[0], by=self)
+        self.tips[1].peer_with(b, by=self)
         self.latency = latency
         self.pipes = [deque([0] * self.latency) for _ in xrange(2)]
         self.endpoint_names = map(str, each(self.tips).peer.host)
         mint.worker(self.run, priority=simulation.LINK_PRIORITY)
+
+    def peer_of(self, tip):
+        return next(t for t in self.tips if t != tip.peer).peer
 
     def run(self):
         while True:

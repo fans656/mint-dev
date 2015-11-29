@@ -101,6 +101,14 @@ class BitFramer(Framer):
         ]))
         return r
 
+    @property
+    def sending_started(self):
+        return bool(self.oframe)
+
+    @property
+    def recving_finished(self):
+        return self.iframe.complete
+
 class Outputter(object):
 
     def __init__(self, bytes=None):
@@ -129,6 +137,7 @@ class Inputter(object):
         self.idle = True
         self.complete = False
         self.count = 0
+        self.recving_finished = False
 
     def feed(self, bit):
         if self.idle:

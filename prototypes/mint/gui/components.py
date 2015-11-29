@@ -75,6 +75,14 @@ class Device(Model, QGraphicsPixmapItem):
                 pics = QApplication.instance().resources['pics']
                 cls._pic = pics.get(cls.__name__, pics['default'])
 
+    def is_sending_to(self, peer):
+        try:
+            return self.model.is_sending_to(peer.model)
+        except Exception as e:
+            log.warning(str(e))
+            raise
+            return False
+
     def boundingRect(self):
         return super(Device, self).boundingRect().adjusted(0, 0, 0, 20)
 
@@ -128,3 +136,28 @@ class Link(Model, QGraphicsLineItem):
         offset = new_mid_pt - old_mid_pt
         self.console.moveBy(offset.x(), offset.y())
         self.setLine(new_line)
+
+    def paint(self, p, *args):
+        super(Link, self).paint(p, *args)
+        if self.devices[0].is_sending_to(self.devices[1]):
+            norm = self.line().normalVector()
+            norm_offset = QPointF(norm.dx(), norm.dy()) / norm.length() * 20
+            unit = self.line().unitVector()
+            unit_offset = QPointF(unit.dx(), unit.dy()) / unit.length() * 20
+            beg = self.line().pointAt(0.2)
+            beg += norm_offset
+            end = beg + unit_offset
+            rc = QRectF(end, QSize(5, 5))
+            p.drawLine(QLineF(beg, end))
+            p.drawRect(rc)
+        if self.devices[1].is_sending_to(self.devices[0]):
+            norm = self.line().normalVector()
+            norm_offset = QPointF(norm.dx(), norm.dy()) / norm.length() * -20
+            unit = self.line().unitVector()
+            unit_offset = QPointF(unit.dx(), unit.dy()) / unit.length() * -20
+            beg = self.line().pointAt(0.8)
+            beg += norm_offset
+            end = beg + unit_offset
+            rc = QRectF(end, QSize(5, 5))
+            p.drawLine(QLineF(beg, end))
+            p.drawRect(rc)

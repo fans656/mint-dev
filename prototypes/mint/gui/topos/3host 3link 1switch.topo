@@ -1,10 +1,6 @@
 {
     "view": {
-        "mode": "Event", 
-        "center": {
-            "x": 282.0, 
-            "y": 108.0
-        }
+        "mode": "Event"
     }, 
     "items": [
         {
@@ -73,10 +69,10 @@
             "x": 0.0, 
             "y": 0.0, 
             "console": {
-                "dx": 0.0, 
-                "dy": 0.0, 
-                "width": 127.0, 
-                "height": 26.0, 
+                "dx": -130.0, 
+                "dy": -25.0, 
+                "width": 154.0, 
+                "height": 71.0, 
                 "enabled": false, 
                 "has_frame": false, 
                 "visible": false
