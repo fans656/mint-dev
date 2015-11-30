@@ -18,4 +18,4 @@ link(a, switch.tips[0])
 link(b, switch.tips[1])
 link(c, switch.tips[2])
 
-run(gui=True, until=400)
+run(gui=True, until=341)

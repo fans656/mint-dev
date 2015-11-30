@@ -1,6 +1,6 @@
 {
     "view": {
-        "mode": "Tik-Tok"
+        "mode": "Event"
     }, 
     "items": [
         {
@@ -21,8 +21,8 @@
         {
             "role": "Host", 
             "index": 1, 
-            "x": 433.0, 
-            "y": 117.0, 
+            "x": 490.0, 
+            "y": 116.0, 
             "console": {
                 "dx": -44.0, 
                 "dy": 61.0, 

@@ -18,7 +18,9 @@ def load_resources():
     ret = {}
     path = os.path.dirname(inspect.getfile(inspect.currentframe()))
     ret['path'] = path
-    ret['pics'] = load_pics(os.path.join(path, 'pics'))
+    pics = load_pics(os.path.join(path, 'pics'))
+    pics['frame'] = pics['frame'].scaledToWidth(16)
+    ret['pics'] = pics
     return ret
 
 def run(sim):

@@ -10,4 +10,4 @@ def _():
 a, b = Host(), Host()
 link(a, b)
 
-run(gui=True, until=400)
+run(gui=True, until=46)

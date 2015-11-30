@@ -37,6 +37,7 @@ class Buffer(object):
 class Framer(object):
 
     def __init__(self, tip, buffer_size=512):
+        tip.master = self
         self.tip = tip
         self.obuffer = Buffer(buffer_size)
         self.ibuffer = Buffer(buffer_size)
@@ -102,12 +103,12 @@ class BitFramer(Framer):
         return r
 
     @property
-    def sending_started(self):
-        return bool(self.oframe)
+    def sending(self):
+        return self.oframe.frame_length
 
     @property
-    def recving_finished(self):
-        return self.iframe.complete
+    def sent(self):
+        return self.oframe.frame_length - len(self.oframe)
 
 class Outputter(object):
 
@@ -116,6 +117,7 @@ class Outputter(object):
             self.bits = bitarray(endian='big')
         else:
             self.bits = bitstuff.stuffed(bytes)
+        self.frame_length = len(self.bits)
         self.i = 0
 
     def next_bit(self):
@@ -125,10 +127,12 @@ class Outputter(object):
             return int(r)
         except IndexError:
             del self.bits[:]
+            self.frame_length = 0
+            self.i = 0
         return 0
 
-    def __nonzero__(self):
-        return bool(self.bits)
+    def __len__(self):
+        return self.frame_length - self.i
 
 class Inputter(object):
 

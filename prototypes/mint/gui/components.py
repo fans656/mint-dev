@@ -75,14 +75,6 @@ class Device(Model, QGraphicsPixmapItem):
                 pics = QApplication.instance().resources['pics']
                 cls._pic = pics.get(cls.__name__, pics['default'])
 
-    def is_sending_to(self, peer):
-        try:
-            return self.model.is_sending_to(peer.model)
-        except Exception as e:
-            log.warning(str(e))
-            raise
-            return False
-
     def boundingRect(self):
         return super(Device, self).boundingRect().adjusted(0, 0, 0, 20)
 
@@ -137,27 +129,35 @@ class Link(Model, QGraphicsLineItem):
         self.console.moveBy(offset.x(), offset.y())
         self.setLine(new_line)
 
+    def sending_progress(self, device):
+        entity = device.model
+        link = self.model
+        tip = link[entity]
+        sending = entity.sending(at=tip)
+        if not sending:
+            return 0
+        return entity.sent(at=tip) / float(sending + link.latency)
+
     def paint(self, p, *args):
         super(Link, self).paint(p, *args)
-        if self.devices[0].is_sending_to(self.devices[1]):
-            norm = self.line().normalVector()
-            norm_offset = QPointF(norm.dx(), norm.dy()) / norm.length() * 20
-            unit = self.line().unitVector()
-            unit_offset = QPointF(unit.dx(), unit.dy()) / unit.length() * 20
-            beg = self.line().pointAt(0.2)
-            beg += norm_offset
-            end = beg + unit_offset
-            rc = QRectF(end, QSize(5, 5))
-            p.drawLine(QLineF(beg, end))
-            p.drawRect(rc)
-        if self.devices[1].is_sending_to(self.devices[0]):
-            norm = self.line().normalVector()
-            norm_offset = QPointF(norm.dx(), norm.dy()) / norm.length() * -20
-            unit = self.line().unitVector()
-            unit_offset = QPointF(unit.dx(), unit.dy()) / unit.length() * -20
-            beg = self.line().pointAt(0.8)
-            beg += norm_offset
-            end = beg + unit_offset
-            rc = QRectF(end, QSize(5, 5))
-            p.drawLine(QLineF(beg, end))
-            p.drawRect(rc)
+        pg0 = self.sending_progress(self.devices[0])
+        pg1 = self.sending_progress(self.devices[1])
+        line = self.line()
+        #print '!!!', pg0, pg1
+        line2 = QLineF(line.p2(), line.p1())
+        #print line.length(), line2.length()
+        if pg0:
+            self.draw_arrow(p, pg0, line)
+        if pg1:
+            self.draw_arrow(p, pg1, QLineF(line.p2(), line.p1()))
+
+    def draw_arrow(self, p, ratio, line, length=10):
+        line = QLineF(line)
+        line.setP2(line.pointAt(1 - length / line.length()))
+        pt = QPointF(line.length() * ratio, -10)
+        p.save()
+        p.translate(line.p1())
+        p.rotate(-line.angle())
+        pixmap = QApplication.instance().resources['pics']['frame']
+        p.drawPixmap(pt - QPointF(pixmap.width() / 2.0, pixmap.height() / 2.0), pixmap)
+        p.restore()

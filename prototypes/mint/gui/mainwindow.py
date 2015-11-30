@@ -1,3 +1,5 @@
+import os
+
 from PySide.QtCore import *
 from PySide.QtGui import *
 
@@ -12,7 +14,9 @@ class Mainwindow(QMainWindow):
         self.sim = sim
         self.scene = Scene(self.sim.entities)
         self.view = View(sim, self.scene)
-        self.setWindowTitle('mint')
+        self.setWindowTitle('mint - Press ? for help')
+        path = QApplication.instance().resources['path']
+        self.setWindowIcon(QIcon(os.path.join(path, 'pics/logo.ico')))
         self.scene.load()
 
         lt = QHBoxLayout()

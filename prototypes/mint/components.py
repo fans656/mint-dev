@@ -89,23 +89,11 @@ class Host(Entity):
         header = struct.pack('!BB', to, self.mac)
         self.framer.send(header + data)
 
-    def is_sending_to(self, entity):
-        peer_port = self.tip.peer_host.port_to(self.framer)
-        return self.sending_started and not peer_port.recving_finished
+    def sending(self, at):
+        return self.framer.sending
 
-    def port_to(self, framer):
-        return self.framer
-
-    def has_port(self, framer):
-        return self.framer == framer
-
-    @property
-    def sending_started(self):
-        return self.framer.sending_started
-
-    @property
-    def recving_finished(self):
-        return self.framer.recving_finished
+    def sent(self, at):
+        return self.framer.sent
 
 class Hub(Entity):
 
@@ -147,18 +135,11 @@ class Switch(Entity):
         ]
         return r
 
-    def is_sending_to(self, entity):
-        peers_ports = zip(each(self.tips).peer_host, self.ports)
-        peer_port, port = next((p.port_to(pt), pt)
-                               for p, pt in peers_ports if p == entity)
-        return port.sending_started and not peer_port.recving_finished
+    def sending(self, at):
+        return at.master.sending
 
-    def port_to(self, port):
-        return next(p for p in self.ports
-                    if p.tip.peer_host.has_port(port))
-
-    def has_port(self, port):
-        return port in self.ports
+    def sent(self, at):
+        return at.master.sent
 
     class Routes(object):
 
@@ -241,6 +222,9 @@ class Link(Entity):
             (pipe_name0, ''.join(map(str, self.pipes[0]))),
             (pipe_name1, ''.join(map(str, self.pipes[1]))),
         ))
+
+    def __getitem__(self, entity):
+        return next(tip.peer for tip in self.tips if tip.peer.host == entity)
 
 def link(a, b, *args, **kwargs):
     def to_tip(o):

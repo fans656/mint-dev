@@ -45,8 +45,23 @@ class View(QGraphicsView):
             self.toggle_mode()
         elif ch == config.key['Next mode']:
             self.next_mode()
+        elif ch == config.key['Run']:
+            self.run()
         elif ch == '?':
             self.help()
+
+    def run(self):
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.step_and_refresh)
+        # time interval
+        self.timer.start(30)
+
+    def step_and_refresh(self):
+        if self.sim.finished:
+            self.timer.stop()
+        else:
+            self.sim.step()
+            self.refresh()
 
     def step(self):
         sim = self.sim
