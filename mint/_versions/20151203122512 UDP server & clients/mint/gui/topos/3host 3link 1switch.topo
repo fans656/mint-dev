@@ -1,0 +1,112 @@
+{
+    "view": {
+        "mode": "Event"
+    }, 
+    "items": [
+        {
+            "role": "Host", 
+            "index": 1, 
+            "x": 62.0, 
+            "y": 272.0, 
+            "console": {
+                "dx": 31.0, 
+                "dy": -37.0, 
+                "width": 727.0, 
+                "height": 208.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true
+            }
+        }, 
+        {
+            "role": "Host", 
+            "index": 2, 
+            "x": 265.0, 
+            "y": 85.0, 
+            "console": {
+                "dx": 30.0, 
+                "dy": -58.0, 
+                "width": 624.0, 
+                "height": 202.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true
+            }
+        }, 
+        {
+            "role": "Host", 
+            "index": 3, 
+            "x": 63.0, 
+            "y": -106.0, 
+            "console": {
+                "dx": 31.0, 
+                "dy": -84.0, 
+                "width": 753.0, 
+                "height": 204.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true
+            }
+        }, 
+        {
+            "role": "Switch", 
+            "index": 1, 
+            "x": 63.0, 
+            "y": 114.0, 
+            "console": {
+                "dx": -422.0, 
+                "dy": -142.0, 
+                "width": 346.0, 
+                "height": 258.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 1, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": -130.0, 
+                "dy": -25.0, 
+                "width": 154.0, 
+                "height": 71.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 2, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 127.0, 
+                "height": 26.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 3, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 127.0, 
+                "height": 26.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false
+            }
+        }
+    ]
+}

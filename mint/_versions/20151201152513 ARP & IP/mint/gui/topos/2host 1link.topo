@@ -1,0 +1,52 @@
+{
+    "view": {
+        "mode": "Tik-Tok"
+    }, 
+    "items": [
+        {
+            "role": "Host", 
+            "index": 0, 
+            "x": 50.0, 
+            "y": 115.0, 
+            "console": {
+                "dx": -245.0, 
+                "dy": 65.0, 
+                "width": 387.0, 
+                "height": 217.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true
+            }
+        }, 
+        {
+            "role": "Host", 
+            "index": 1, 
+            "x": 490.0, 
+            "y": 116.0, 
+            "console": {
+                "dx": -44.0, 
+                "dy": 61.0, 
+                "width": 429.0, 
+                "height": 218.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 0, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": -102.0, 
+                "dy": -101.0, 
+                "width": 239.0, 
+                "height": 73.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false
+            }
+        }
+    ]
+}

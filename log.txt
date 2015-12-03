@@ -670,3 +670,53 @@ the following methods do the actual advance of time
 
 2015-11-22 17:00:48
 正好，需要实现一个 heap
+
+2015-12-01 09:28:51
+https://en.wikipedia.org/wiki/Data_terminal_equipment
+https://en.wikipedia.org/wiki/Data_circuit-terminating_equipment
+发现计网作业里的有些问题还挺insighting的
+比如这个东西，不查还真不知道
+
+https://en.wikipedia.org/wiki/Twisted_pair
+UTP 仔细看看也许能明白信号、线路的一些东西
+
+2015-12-01 10:35:22
+给host们赋了ip，开写 Host.l3send 的时候意识到需要ARP了
+否则l3的用户说：“给我把这个发给1.0.0.2”，l3要用l2的send
+而l2的send是这么定义的：send(data, dst_mac)
+l3手里拿着个dst_ip，却要用dst_mac才能发送
+怎么办？ARP + cached ARP table
+
+但是问题来了，ARP packet 包在 l2 frame 里之后，recver 怎么知道拿到的 frame 里是什么东西？arp? ip? 还是别的什么？
+我们知道 Ethernet frame 里有个 EtherType 的 field
+https://en.wikipedia.org/wiki/EtherType#Examples
+    0x0800 IPv4
+    0x0806 ARP
+    0x8863 PPPoE Discovery Stage
+    0x8864 PPPoE Session Stage
+    ...
+
+当时不明白的是，不是来了个802.3把人 EtherType 给改成 length 了嘛
+那么 802.3 的 frame，recver 是怎么判断 l2+ packet 的类型的？：
+http://www.danzig.jct.ac.il/tcp-ip-lab/ibm-tutorial/3376c28.html
+这里点明了，packet里还有个802.2的header，这里指定了type
+
+呃，我自己写就先奔 Ethernet 去吧，，简单~~
+
+2015-12-01 14:28:12
+3000行了
+ARP实现了一半
+
+2015-12-02 12:09:07
+目前的模型又有点捉襟见肘了
+在思考一个新的模型，另外想借此机会把性能提上去(通过底层不使用bit stream的方式——直接发frame，之后如果需要用逻辑效果实现bit error等事件)
+另外因为一路爬升摸到了些transport layer的模样，现在结合这个思索OS模型
+
+对于host:
+os维护一个sockets的列表，下头是一个NIC
+nic通过interrupt与os互动(也可以让os来poll，不过看样子interrupt的方式可以简化之后的协议编写？)
+    INT_FRAME_SENT
+    INT_FRAME_RECVED
+os在 frame_sent handler 中轮询 sockets 的状态，如果有谁需要发送，就拿它的数据交给nic——这里就涉及到socket priority的概念了，不能starve某个socket
+
+另外又想到，可能维护的除了socket还得有别的potential sender——比如ARP这种位于transport layer之下的，但是也要发包
