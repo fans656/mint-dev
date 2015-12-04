@@ -1,16 +1,16 @@
 '''
-arp
+look the b's arp response! which got the dst_ip == 127.0.0.1
 
-without knowing b's mac, a perform arp first.
-try uncomment `a.arp_table[b.ip] = b.mac`,
-then a will send packet directly.
-but with switch not knowing b's mac-port by the respond arp packet,
-this will result flood so b and c both receives the packet.
+switch cares about nothing above layer-2
+and since arp packet is directly built upon layer-2 frame
+it will happily travel in a switched network with those invalid
+LOOPBACK ip address
 '''
 from mint import *
 from mint.pdus import Packet
 
 a, b, c = Host(), Host(), Host()
+a.ip = '127.0.0.1'
 #a.arp_table[b.ip] = b.mac
 s = Switch()
 link(a, s.tips[0])

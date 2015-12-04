@@ -3,6 +3,7 @@ from mint.cachetable import CacheTable
 from mint.pdus import (
     ARP as PDU,
     Frame,
+    IP_Loopback,
     MAC_Invalid, MAC_Broadcast,
 )
 
