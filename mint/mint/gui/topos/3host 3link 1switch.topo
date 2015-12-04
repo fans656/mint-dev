@@ -1,6 +1,6 @@
 {
     "view": {
-        "mode": "Event"
+        "mode": "Tik-Tok"
     }, 
     "items": [
         {
@@ -15,7 +15,8 @@
                 "height": 208.0, 
                 "enabled": true, 
                 "has_frame": false, 
-                "visible": true
+                "visible": true, 
+                "tab_index": 0
             }
         }, 
         {
@@ -30,7 +31,8 @@
                 "height": 202.0, 
                 "enabled": true, 
                 "has_frame": false, 
-                "visible": true
+                "visible": true, 
+                "tab_index": 3
             }
         }, 
         {
@@ -45,7 +47,8 @@
                 "height": 204.0, 
                 "enabled": true, 
                 "has_frame": false, 
-                "visible": true
+                "visible": true, 
+                "tab_index": 0
             }
         }, 
         {
@@ -58,9 +61,10 @@
                 "dy": -142.0, 
                 "width": 346.0, 
                 "height": 258.0, 
-                "enabled": false, 
+                "enabled": true, 
                 "has_frame": false, 
-                "visible": false
+                "visible": true, 
+                "tab_index": 0
             }
         }, 
         {
@@ -72,10 +76,11 @@
                 "dx": -130.0, 
                 "dy": -25.0, 
                 "width": 154.0, 
-                "height": 71.0, 
+                "height": 75.0, 
                 "enabled": false, 
                 "has_frame": false, 
-                "visible": false
+                "visible": false, 
+                "tab_index": 0
             }
         }, 
         {
@@ -87,10 +92,11 @@
                 "dx": 0.0, 
                 "dy": 0.0, 
                 "width": 127.0, 
-                "height": 26.0, 
+                "height": 75.0, 
                 "enabled": false, 
                 "has_frame": false, 
-                "visible": false
+                "visible": false, 
+                "tab_index": 0
             }
         }, 
         {
@@ -102,10 +108,11 @@
                 "dx": 0.0, 
                 "dy": 0.0, 
                 "width": 127.0, 
-                "height": 26.0, 
+                "height": 75.0, 
                 "enabled": false, 
                 "has_frame": false, 
-                "visible": false
+                "visible": false, 
+                "tab_index": 0
             }
         }
     ]

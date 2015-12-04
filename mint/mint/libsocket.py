@@ -54,7 +54,7 @@ class Socket(object):
             dst_ip=dst_ip,
             payload=datagram.raw,
         )
-        self.host.send_packet(packet)
+        self.host.send_packet(packet, ethertype=Frame.EtherType.IPv4)
 
     def recvfrom(self, bufsize=0):
         while True:

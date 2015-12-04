@@ -2,6 +2,7 @@ import struct, logging
 from collections import deque, OrderedDict
 
 import mint
+from mint.utils import put_format
 
 log = logging.getLogger('core')
 
@@ -53,14 +54,14 @@ class Entity(object):
 
     def __init__(self, n_tips):
         self.tips = [Tip(self) for _ in xrange(n_tips)]
+        self.stdout = []
         mint.add(self)
+        self.statuses = []
 
     def __repr__(self):
         return '{} {}'.format(type(self).__name__, self.index)
 
     def report(self, *args, **kwargs):
-        mint.report(self, '|', *args, **kwargs)
-
-    @property
-    def status(self):
-        return {'{}'.format(self): 'nothing'}
+        s = put_format(*args, **kwargs)
+        self.stdout.append('{:5} | {}'.format(mint.now(), s))
+        mint.report(self, '|', s)

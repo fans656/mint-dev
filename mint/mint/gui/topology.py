@@ -39,6 +39,7 @@ class Topology(object):
                     ('enabled', item.console.enabled),
                     ('has_frame', item.console.has_frame),
                     ('visible', item.console.visible),
+                    ('tab_index', item.console.tab_container.currentIndex()),
                 ))),
             ))
             item_states.append(item_state)
@@ -66,6 +67,8 @@ class Topology(object):
             console.enabled = console_state['enabled']
             console.visible = console_state['visible']
             console.has_frame = console_state['has_frame']
+            console.tab_container.setCurrentIndex(
+                console_state.get('tab_index', 0))
             item.setPos(state['x'], state['y'])
         self.view.mode = info['view']['mode']
         return True

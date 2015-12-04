@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import mint
 
 class CacheTable(object):
@@ -16,5 +17,9 @@ class CacheTable(object):
     def __setitem__(self, key, val):
         self.entries[key] = (val, mint.now())
 
-    def __repr__(self):
-        return repr({k: v[0] for k, v in self.entries.items()})
+    @property
+    def status(self):
+        r = OrderedDict()
+        for k, (v, time) in self.entries.items():
+            r[k] = '{} ({})'.format(v, time)
+        return r

@@ -9,11 +9,11 @@ from components import Host
 
 class Mainwindow(QMainWindow):
 
-    def __init__(self, sim, parent=None):
-        super(Mainwindow, self).__init__(parent)
+    def __init__(self, sim, gui_option):
+        super(Mainwindow, self).__init__()
         self.sim = sim
         self.scene = Scene(self.sim.entities)
-        self.view = View(sim, self.scene)
+        self.view = View(sim, gui_option, self.scene)
         self.setWindowTitle('mint - Press ? for help')
         path = QApplication.instance().resources['path']
         self.setWindowIcon(QIcon(os.path.join(path, 'pics/logo.ico')))

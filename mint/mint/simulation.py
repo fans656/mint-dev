@@ -27,9 +27,6 @@ class Simulation(object):
         self.TikTok = self.env.Time
         self.Action = self.env.Thread
 
-    def banner(self, role=''):
-        utils.put('=' * 20, self.now, role)
-
     def add(self, o):
         cls = type(o)
         self.indexes[cls] += 1
@@ -81,27 +78,21 @@ class Simulation(object):
     def stdout(self):
         return self.gui_stdout
 
-    def run(self, until=None, gui=False, *args, **kwargs):
+    def run(self, until=None, gui=None, *args, **kwargs):
         if until is not None:
             self.actor(lambda: self.elapse(until))
-        if gui:
+        if gui not in (False, None):
+            if not isinstance(gui, dict):
+                gui = {}
             self.gui_running = True
             from gui import run
-            run(self)
+            run(self, gui, *args, **kwargs)
         else:
             while not self.env.finished:
                 self.step(*args, **kwargs)
 
     def step(self, before=None, after=None, role='', **kwargs):
         del self.gui_stdout[:]
-        if before:
-            self.banner(role)
-            before()
-            raw_input()
         self.env.step(**kwargs)
-        if after:
-            self.banner(role)
-            after()
-            raw_input()
 
 sim = Simulation()

@@ -1,4 +1,4 @@
-import logging
+import logging, traceback
 from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtWebKit import QWebView
@@ -16,6 +16,16 @@ status_template = Template('''
 </style>
 <pre>{{data|e}}</pre>
 ''')
+
+class LogView(QTextEdit):
+
+    def __init__(self, stdout):
+        super(LogView, self).__init__()
+        self.stdout = stdout
+        self.refresh()
+
+    def refresh(self):
+        self.setText('\n'.join(self.stdout))
 
 class StatusView(QWebView):
 
@@ -36,7 +46,7 @@ class StatusView(QWebView):
 
 class Console(QGraphicsProxyWidget):
 
-    def __init__(self, model):
+    def __init__(self, item, model):
         super(Console, self).__init__()
         self.model = model
         self._enabled = False
@@ -47,6 +57,7 @@ class Console(QGraphicsProxyWidget):
         self.setZValue(-3)
         self.tab_container = QTabWidget()
         self.tab_container.setWindowTitle(str(model))
+        self.tab_container.currentChanged.connect(self.refresh_tab)
 
         status = get_status(self.model)
         if isinstance(status, list):
@@ -56,13 +67,20 @@ class Console(QGraphicsProxyWidget):
             names = ['Status']
             models = [self.model]
         self.views = [StatusView(model) for model in models]
+        # add the log tab (read model.stdout)
+        logview = LogView(self.model.stdout)
+        self.views[0:0] = [logview]
+        names[0:0] = [str(self.model)]
         for view, name in zip(self.views, names):
             self.tab_container.addTab(view, name)
         self.setWidget(self.tab_container)
         self.refresh()
 
     def refresh(self):
-        each(self.views).refresh()
+        self.refresh_tab(self.tab_container.currentIndex())
+
+    def refresh_tab(self, index):
+        self.views[index].refresh()
 
     def closeEvent(self, ev):
         self._enabled = False
@@ -100,7 +118,8 @@ class Console(QGraphicsProxyWidget):
 
 def stringify(status, depth=0):
     s = ''
-    for k, v in status.items():
+    pairs = status.items() if isinstance(status, dict) else status
+    for k, v in pairs:
         indent = ' ' * 4 * depth
         if hasattr(v, 'status') or hasattr(type(v), 'status'):
             s += indent + '{}\n'.format(k)
@@ -115,13 +134,9 @@ def stringify(status, depth=0):
 def get_status(model):
     if isinstance(model, dict):
         return model
-    r = {str(model): 'has no status'}
     try:
-        return getattr(
-            model, 'status', r
-        )
+        return model.status
     except Exception as e:
-        import traceback
         traceback.print_exc()
         log.error('{}.status error {}'.format(model, e))
-        return r
+        return {str(model): 'error getting status'}

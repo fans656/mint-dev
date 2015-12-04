@@ -7,5 +7,6 @@ key = OrderedDict([
     ('Toggle console frame',    'f'),
     ('Toggle mode',             'm'),
     ('Next mode',               'M'),
+    ('Clear',                   'c'),
     ('Help',                    '?'),
 ])

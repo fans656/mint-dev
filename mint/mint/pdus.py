@@ -1,4 +1,6 @@
-import struct
+import struct, traceback
+
+class UnknownFormat(Exception): pass
 
 class Raw(object):
 
@@ -10,10 +12,16 @@ class Raw(object):
         b = self.i
         e = b + n
         self.i = e
-        return self.raw[b:e]
+        r = self.raw[b:e]
+        if not r:
+            raise IndexError('data empty ({}:{})'.format(b, e))
+        return r
 
     def popall(self):
-        return self.pop(len(self.raw) - self.i)
+        try:
+            return self.pop(len(self.raw) - self.i)
+        except IndexError:
+            return ''
 
 class PDU(object):
 
@@ -22,7 +30,10 @@ class PDU(object):
         if raw is None:
             raw = self.compose(**kwargs)
         self.raw = raw
-        self.discompose(Raw(raw))
+        try:
+            self.discompose(Raw(raw))
+        except IndexError:
+            raise UnknownFormat(type(self).__name__)
 
 class Field(object):
 
@@ -39,6 +50,14 @@ class Field(object):
 
     def __getitem__(self, val):
         return self.value2name[val]
+
+class Data(PDU):
+
+    def discompose(self, raw):
+        self.payload = raw.popall()
+
+    def compose(self, payload):
+        return payload
 
 class Frame(PDU):
 
@@ -228,33 +247,50 @@ class Discomposer(object):
         raw = self.getter()
         r = OrderedDict([('raw', repr(raw))])
         if raw:
-            frame = Frame(raw)
-            r['Frame'] = OrderedDict([
-                ('Dst MAC', str(frame.dst_mac)),
-                ('Src MAC', str(frame.src_mac)),
-                ('EtherType', Frame.EtherType[frame.ethertype]),
-            ])
-            if frame.ethertype == Frame.EtherType.IPv4:
-                packet = Packet(frame.payload)
-                r['IPv4'] = OrderedDict([
-                    ('Protocol', Packet.Protocol[packet.protocol]),
-                    ('Src IP', str(packet.src_ip)),
-                    ('Dst IP', str(packet.dst_ip)),
-                ])
-                if packet.protocol == Packet.Protocol.UDP:
-                    datagram = Datagram(packet.payload)
-                    r['UDP'] = OrderedDict([
-                        ('Src Port', str(datagram.src_port)),
-                        ('Dst Port', str(datagram.dst_port)),
-                        ('Payload', repr(datagram.payload)),
-                    ])
-            elif frame.ethertype == Frame.EtherType.ARP:
-                arp = ARP(frame.payload)
-                r['ARP'] = OrderedDict([
-                    ('Oper', ARP.Oper[arp.oper]),
-                    ('Src IP', str(arp.src_ip)),
-                    ('Src MAC', str(arp.src_mac)),
-                    ('Dst IP', str(arp.dst_ip)),
-                    ('Dst MAC', str(arp.dst_mac)),
-                ])
+            try:
+                self.dis_frame(r, raw)
+            except Exception:
+                traceback.print_exc()
         return r
+
+    def dis_frame(self, r, raw):
+        frame = Frame(raw)
+        r['Frame'] = OrderedDict([
+            ('Dst MAC', str(frame.dst_mac)),
+            ('Src MAC', str(frame.src_mac)),
+            ('EtherType', Frame.EtherType[frame.ethertype]),
+        ])
+        if frame.ethertype == Frame.EtherType.IPv4:
+            self.dis_ipv4(r, frame.payload)
+        elif frame.ethertype == Frame.EtherType.ARP:
+            self.dis_arp(r, frame.payload)
+
+    def dis_ipv4(self, r, raw):
+        packet = Packet(raw)
+        r['IPv4'] = OrderedDict([
+            ('Protocol', Packet.Protocol[packet.protocol]),
+            ('Src IP', str(packet.src_ip)),
+            ('Dst IP', str(packet.dst_ip)),
+        ])
+        if packet.protocol == Packet.Protocol.Raw:
+            r['IPv4']['Payload'] = repr(packet.payload)
+        elif packet.protocol == Packet.Protocol.UDP:
+            self.dis_udp(r, packet.payload)
+
+    def dis_udp(self, r, raw):
+        datagram = Datagram(raw)
+        r['UDP'] = OrderedDict([
+            ('Src Port', str(datagram.src_port)),
+            ('Dst Port', str(datagram.dst_port)),
+            ('Payload', repr(datagram.payload)),
+        ])
+
+    def dis_arp(self, r, raw):
+        arp = ARP(raw)
+        r['ARP'] = OrderedDict([
+            ('Oper', ARP.Oper[arp.oper]),
+            ('Src IP', str(arp.src_ip)),
+            ('Src MAC', str(arp.src_mac)),
+            ('Dst IP', str(arp.dst_ip)),
+            ('Dst MAC', str(arp.dst_mac)),
+        ])

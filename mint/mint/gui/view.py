@@ -3,6 +3,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from topology import Topology
 import config
+from mint.utils import each
 
 log = logging.getLogger('view')
 
@@ -13,9 +14,10 @@ class View(QGraphicsView):
     MODE_PHASE = 'Phase'
     MODES = [MODE_EVENT, MODE_TIK_TOK, MODE_PHASE]
 
-    def __init__(self, sim, parent=None):
-        super(View, self).__init__(parent)
+    def __init__(self, sim, gui_option, *args, **kwargs):
+        super(View, self).__init__(*args, **kwargs)
         self.sim = sim
+        self.ms_per_step = gui_option.get('ms_per_step', 1)
         self.setMinimumSize(480, 480)
         self.setRenderHints(QPainter.Antialiasing)
         self.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -37,6 +39,8 @@ class View(QGraphicsView):
         ch = ev.text()
         if ch == config.key['Step']:
             self.step()
+        elif ch == config.key['Run']:
+            self.run()
         elif ch == config.key['Toggle console']:
             self.toggle_console()
         elif ch == config.key['Toggle console frame']:
@@ -45,8 +49,9 @@ class View(QGraphicsView):
             self.toggle_mode()
         elif ch == config.key['Next mode']:
             self.next_mode()
-        elif ch == config.key['Run']:
-            self.run()
+        elif ch == config.key['Clear']:
+            each(self.scene().devices).highlighted = False
+            self.refresh()
         elif ch == '?':
             self.help()
 
@@ -54,9 +59,10 @@ class View(QGraphicsView):
         if hasattr(self, 'timer'):
             self.stop()
         elif not self.sim.finished:
+            each(self.scene().devices).highlighted = False
             self.timer = QTimer()
             self.timer.timeout.connect(self.step_and_refresh)
-            self.timer.start(30) # time interval
+            self.timer.start(self.ms_per_step)
         else:
             QMessageBox.warning(self, 'Error',
                                 'Simulation finished.\n' +
@@ -75,10 +81,16 @@ class View(QGraphicsView):
 
     def step(self):
         sim = self.sim
+        each(self.scene().devices).highlighted = False
         if sim.finished and self.mode == self.MODE_EVENT:
             self.mode = self.MODE_TIK_TOK
         if self.mode == self.MODE_EVENT:
-            if not self.thread or self.thread.isFinished():
+            # stop
+            if self.thread and not self.thread.isFinished:
+                self.thread.stopped = True
+                self.thread.wait()
+            # start
+            else:
                 self.thread = StepUntilSthHappend(sim)
                 self.thread.finished.connect(self.refresh)
                 self.thread.start()
@@ -119,7 +131,6 @@ class View(QGraphicsView):
     def drawForeground(self, p, rc):
         p.save()
         font = p.font()
-        font.setFamily('Arial')
         font.setPointSize(10)
         p.setFont(font)
         pen = p.pen()
@@ -129,7 +140,6 @@ class View(QGraphicsView):
         # draw simulation status
         s = ''
         s += 'Mode: {}\n'.format(self.mode)
-        s += 'Stat: {}\n'.format(sim.status)
         s += 'Time: {}\n'.format(sim.now)
         p.drawText(rc, Qt.AlignTop | Qt.AlignLeft, s)
         # draw simulation stdout
@@ -146,9 +156,10 @@ class StepUntilSthHappend(QThread):
     def __init__(self, sim):
         super(StepUntilSthHappend, self).__init__()
         self.sim = sim
+        self.stopped = False
 
     def run(self):
-        while True:
+        while not self.stopped:
             self.sim.step()
             if self.sim.finished or self.sim.stdout:
                 break

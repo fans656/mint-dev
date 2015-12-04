@@ -23,10 +23,14 @@ def load_resources():
     ret['pics'] = pics
     return ret
 
-def run(sim):
+def run(sim, gui_option, *args, **kwargs):
     app = QApplication([])
+    font = app.font()
+    font.setFamily('Consolas')
+    font.setPointSize(8)
+    app.setFont(font)
     app.resources = load_resources()
-    w = Mainwindow(sim)
+    w = Mainwindow(sim, gui_option, *args, **kwargs)
     if 1:
         w.showMaximized()
     else:

@@ -21,8 +21,10 @@ class Model(object):
     def __init__(self, model, *args, **kwargs):
         self.model = model
         super(Model, self).__init__(*args, **kwargs)
-        self.console = Console(model)
+        self.console = Console(self, model)
         self.setToolTip(str(self.model))
+        self.highlighted = False
+        self.stdout_n_lines = 0
 
     @property
     def console_offset(self):
@@ -44,6 +46,10 @@ class Model(object):
             self.console.has_frame = not self.console.has_frame
 
     def refresh(self):
+        n_lines = len(self.model.stdout)
+        if n_lines != self.stdout_n_lines:
+            self.highlighted = True
+            self.stdout_n_lines = n_lines
         self.console.refresh()
 
     def itemChange(self, change, val):
@@ -80,6 +86,8 @@ class Device(Model, QGraphicsPixmapItem):
 
     def paint(self, p, *args):
         super(Device, self).paint(p, *args)
+        if self.highlighted:
+            p.drawRect(self.boundingRect())
         p.drawText(self.boundingRect(), Qt.AlignBottom | Qt.AlignHCenter,
                    str(self.model))
 
@@ -88,13 +96,8 @@ class Device(Model, QGraphicsPixmapItem):
             each(self.links).track_device()
         return super(Device, self).itemChange(change, val)
 
-class Host(Device):
-
-    def __init__(self, model):
-        super(Host, self).__init__(model)
-
+class Host(Device): pass
 class Switch(Device): pass
-
 class Router(Device): pass
 
 class Link(Model, QGraphicsLineItem):
