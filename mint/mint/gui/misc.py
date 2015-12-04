@@ -21,11 +21,17 @@ class LogView(QTextEdit):
 
     def __init__(self, stdout):
         super(LogView, self).__init__()
+        self.setReadOnly(True)
         self.stdout = stdout
         self.refresh()
 
     def refresh(self):
         self.setText('\n'.join(self.stdout))
+        self.scroll_to_bottom()
+
+    def scroll_to_bottom(self):
+        sb = self.verticalScrollBar()
+        sb.setValue(sb.maximum())
 
 class StatusView(QWebView):
 

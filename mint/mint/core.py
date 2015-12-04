@@ -57,6 +57,7 @@ class Entity(object):
         self.stdout = []
         mint.add(self)
         self.statuses = []
+        mint.worker(self.run)
 
     def __repr__(self):
         return '{} {}'.format(type(self).__name__, self.index)

@@ -140,13 +140,14 @@ class View(QGraphicsView):
         # draw simulation status
         s = ''
         s += 'Mode: {}\n'.format(self.mode)
+        s += 'Sim: {}\n'.format(sim.status)
         s += 'Time: {}\n'.format(sim.now)
         p.drawText(rc, Qt.AlignTop | Qt.AlignLeft, s)
-        # draw simulation stdout
-        s = ''
-        for line in sim.stdout:
-            s += line + '\n'
-        p.drawText(rc, Qt.AlignTop | Qt.AlignHCenter, s)
+        ## draw simulation stdout
+        #s = ''
+        #for line in sim.stdout:
+        #    s += line + '\n'
+        #p.drawText(rc, Qt.AlignTop | Qt.AlignHCenter, s)
 
         p.restore()
         super(View, self).drawForeground(p, rc)

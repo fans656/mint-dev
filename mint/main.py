@@ -1,3 +1,12 @@
+'''
+arp
+
+without knowing b's mac, a perform arp first.
+try uncomment `a.arp_table[b.ip] = b.mac`,
+then a will send packet directly.
+but with switch not knowing b's mac-port by the respond arp packet,
+this will result flood so b and c both receives the packet.
+'''
 from mint import *
 from mint.pdus import Packet
 
@@ -10,8 +19,6 @@ link(c, s.tips[2])
 
 @actor
 def _():
-    #a.send('hi')
-    #a.send('hi', mac=0x02)
     a.send('hi', ip='1.0.0.2')
 
-run(gui=True, until=2571)
+run(gui=True, until=999)
