@@ -1,31 +1,65 @@
-import sys
+'''
+Succinct way to write `for` loop
 
-def put(*args):
-    sys.stdout.write(put_format(*args) + '\n')
+>>> each('hello').upper()
+['H', 'E', 'L', 'L', 'O']
 
-def put_format(*args):
-    fmt = args[0]
-    if isinstance(fmt, str) and '{' in fmt:
-        s = fmt.format(*args[1:])
-    else:
-        s = ' '.join(map(str, args))
-    return s
+is equaivalent to
 
-def new_name(obj, reset=True):
-    cls = type(obj)
-    if not hasattr(cls, 'n_instances'):
-        cls.n_instances = 0
-    n = cls.n_instances
-    cls.n_instances += 1
-    return '{} {}'.format(cls.__name__, n)
+>>> [c.upper() for c in 'hello']
+['H', 'E', 'L', 'L', 'O']
 
-class bunch(dict):
+>>> class Foo:
+...     def __init__(self, x):
+...         self.bar = Bar(x)
 
-    def __init__(self, **kwargs):
-        super(bunch, self).__init__(kwargs)
-        self.__dict__.update(kwargs)
+>>> class Bar:
+...     def __init__(self, x):
+...         self.x = x
+...     def say(self):
+...         print self.x
+...         self.x += 1
+...         return self.x
+
+>>> a = [Foo(i) for i in range(3)]
+>>> each(a).bar.say()
+0
+1
+2
+[1, 2, 3]
+
+>>> each(a).foo = 3
+>>> list(each(a).foo)
+[3, 3, 3]
+'''
+import functools
 
 class each(object):
+
+    @staticmethod
+    def v(f):
+        '''
+        vectorize f to operate on the first argument
+
+        >>> def say(name, judgement):
+        ...     print name, judgement
+
+        >>> say('I', 'am sexy')
+        I am sexy
+        >>> each.v(say)(['Mary', 'Lita', 'Victoria'], 'is sexy')
+        Mary is sexy
+        Lita is sexy
+        Victoria is sexy
+        [None, None, None]
+        '''
+        @functools.wraps(f)
+        def f_(xs, *args, **kwargs):
+            rs = []
+            for x in xs:
+                r = f(x, *args, **kwargs)
+                rs.append(r)
+            return rs
+        return f_
 
     def __init__(self, *args):
         if len(args) == 0:
@@ -67,9 +101,6 @@ class each(object):
 
     def __repr__(self):
         return '<each of {}>'.format(self.__iterable)
-
-def vectorized(f):
-    raise NotImplementedError('vectorized function is not implemented yet')
 
 if __name__ == '__main__':
     import doctest

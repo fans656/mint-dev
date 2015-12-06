@@ -720,3 +720,44 @@ nic通过interrupt与os互动(也可以让os来poll，不过看样子interrupt�
 os在 frame_sent handler 中轮询 sockets 的状态，如果有谁需要发送，就拿它的数据交给nic——这里就涉及到socket priority的概念了，不能starve某个socket
 
 另外又想到，可能维护的除了socket还得有别的potential sender——比如ARP这种位于transport layer之下的，但是也要发包
+
+2015-12-04 23:51:24
+开始写router了——又一次感觉到，当你真地去着手实现一个东西的时候，情势会逼你思考乃至真正理解这个东西
+
+2015-12-05 14:45:18
+https://en.wikipedia.org/wiki/Default_gateway
+http://superuser.com/questions/59996/what-does-on-link-mean-on-the-result-of-route-print-command
+每个机器上都有一个route table
+windows 上可以 route print 来显示
+所以其实route这件事在我们本机上就已经在发生了
+比如我发给192.168.0.3的packet被os识别为on-link——即同一个ethernet网上的
+而发给30.201.18.4的packet就会被forward给default gateway——目测是北邮的某个路由器(10.203.6.193) —— 连接的时候通过DHCP得到的
+
+2015-12-05 15:32:31
+http://unix.stackexchange.com/questions/94018/what-is-the-meaning-of-0-0-0-0-as-a-gateway
+route print 会在某些entry里显示gateway为 On-Link，某些项为一个router的具体IP，比如10.203.6.193
+于是困惑操作系统在数据上是怎么构造这个 On-Link 的值的，查了查，应该是 0.0.0.0
+
+https://en.wikipedia.org/wiki/0.0.0.0
+0.0.0.0这家伙在不同语境下有很多种不同的含义
+) DHCP Request里头用作 Source IP——因为host此时还没有取得IP，它就声明自己是0.0.0.0
+) 用在 route table 的 destination network 栏时，意指任意网络
+) 用在 route table 的 gateway 栏时，意指“无”(比如VMnet1的Default Gateway会显示为空，就是因为值为0.0.0.0)
+
+0.0.0.0不能作为 destination address，顶多能用在 source address 中(DHCP request)
+
+2015-12-05 15:52:22
+https://wiki.wireshark.org/Gratuitous_ARP
+免费ARP
+
+http://networkengineering.stackexchange.com/questions/5418/understanding-arp-and-routers
+arp 和 route table 的关系
+不在同一个网段的机子想通信，不会直接ARP彼此，而是ARP gateway，packet是交给gateway转发的
+
+2015-12-06 17:34:05
+http://www.infocellar.com/cable-dsl/routes.htm
+ARP cache table 只会存储“本地”信息——本地的意思是，local ethernet network (通过switch, hub连接起来的) 或者 subnet (同一个ip网段——有相同的网络号)
+所以只有 routing table 中属于 on-link 的那些 entry 才会涉及到 ARP
+
+windows 上可以 arp -a 查看 arp cache
+貌似是每个 interface 对应一个 table

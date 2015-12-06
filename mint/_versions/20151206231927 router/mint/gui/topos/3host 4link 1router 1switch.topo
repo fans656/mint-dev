@@ -1,0 +1,151 @@
+{
+    "view": {
+        "mode": "Tik-Tok"
+    }, 
+    "items": [
+        {
+            "role": "Host", 
+            "index": 1, 
+            "x": 473.0, 
+            "y": 280.0, 
+            "console": {
+                "dx": 47.0, 
+                "dy": -86.0, 
+                "width": 390.0, 
+                "height": 235.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Host", 
+            "index": 2, 
+            "x": 472.0, 
+            "y": -84.0, 
+            "console": {
+                "dx": 36.0, 
+                "dy": -89.0, 
+                "width": 431.0, 
+                "height": 239.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Host", 
+            "index": 3, 
+            "x": -82.0, 
+            "y": 134.0, 
+            "console": {
+                "dx": -261.0, 
+                "dy": 49.0, 
+                "width": 404.0, 
+                "height": 240.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Switch", 
+            "index": 1, 
+            "x": 282.0, 
+            "y": 131.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Router", 
+            "index": 1, 
+            "x": 132.0, 
+            "y": 43.0, 
+            "console": {
+                "dx": -330.0, 
+                "dy": -241.0, 
+                "width": 552.0, 
+                "height": 209.0, 
+                "enabled": true, 
+                "has_frame": false, 
+                "visible": true, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 1, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 2, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 3, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Link", 
+            "index": 4, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": false, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }
+    ]
+}
