@@ -1,0 +1,39 @@
+{
+    "view": {
+        "mode": "Event"
+    }, 
+    "items": [
+        {
+            "role": "Host", 
+            "index": 1, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": true, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Host", 
+            "index": 2, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": true, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }
+    ]
+}

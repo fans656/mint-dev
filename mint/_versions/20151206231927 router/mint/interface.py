@@ -135,7 +135,6 @@ class Interface(object):
             self.arp.process(frame.payload)
         elif frame.ethertype == Frame.EtherType.IPv4:
             self.on_ipv4(frame, interface=self)
-            #self.report('interface don\'t know what to do with frame payloading IPv4')
         elif frame.ethertype in (Frame.EtherType.Raw,):
             self.report(
                 'unsupported frame type "{}", ignored',
@@ -152,4 +151,6 @@ class Interface(object):
             ('MAC', self.mac),
             ('ARP', self.arp_table),
             ('NIC', self.nic),
+            ('O', Discomposer(lambda: self.nic.odata)),
+            ('I', Discomposer(lambda: self.nic.idata)),
         ])

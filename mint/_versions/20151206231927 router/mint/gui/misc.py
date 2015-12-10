@@ -39,10 +39,10 @@ class StatusView(QWebView):
         super(StatusView, self).__init__()
         self.model = model
         page = self.page()
-        page.mainFrame().setScrollBarPolicy(
-            Qt.Vertical, Qt.ScrollBarAlwaysOff)
-        page.mainFrame().setScrollBarPolicy(
-            Qt.Horizontal, Qt.ScrollBarAlwaysOff)
+        #page.mainFrame().setScrollBarPolicy(
+        #    Qt.Vertical, Qt.ScrollBarAlwaysOff)
+        #page.mainFrame().setScrollBarPolicy(
+        #    Qt.Horizontal, Qt.ScrollBarAlwaysOff)
         self.resize(page.mainFrame().contentsSize())
 
     def refresh(self):

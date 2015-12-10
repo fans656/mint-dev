@@ -761,3 +761,40 @@ ARP cache table 只会存储“本地”信息——本地的意思是，local e
 
 windows 上可以 arp -a 查看 arp cache
 貌似是每个 interface 对应一个 table
+
+2015-12-06 23:25:43
+实现了静态路由的router，刚跟github上看自己的repository，都6W+ addition 3W+ deletion 了~~
+系统一路演化过来，每一个阶段都要走到摇摇欲坠和破而后立的时候
+此时尚在新王朝建立后中期的程度，各种不稳和不合的苗头才有一点，但总的看上去还是太平盛世——还能利用一段时间
+可以想见的一些问题将来肯定是要面对的，比如性能(对于以后大规模网络的模拟)，比如架构(目前router和host共用interface的部分，概念就有点儿混乱，之后协议复杂化现实化后可能就不合适了)
+
+2015-12-09 22:13:50
+https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol
+http://serverfault.com/questions/294457/what-do-dhcp-lease-time-and-domain-name-do
+DHCP的过程如下：
+我们的电脑刚启动时是没有IP的(准确地说是某个网卡-interface)
+然后我们的电脑会broadcast一个UDP包，问：“谁能给个IP用啊？” [DHCP Discover]
+我们电脑所在的子网上如果有DHCP server(或者DHCP relay)，就会给我们发offer：“我有我有，你用这个IP吧” [DHCP Offer]
+然后我们的电脑在拿到的offer中选一个，仍旧broadcast说：“我用这个IP了” [DHCP Request]
+然后被request的那个DHCP server就会给我们发来ACK：“好的” [DHCP Ack]
+我们的电脑在收到ACK后，就可以开始使用这个IP了
+
+除了IP，DHCP还会配置子网掩码、默认网关、DNS服务器等等
+
+
+DHCP lease的ip是有租期的，上面那个SO里说大约租期过半，我们的电脑就会请求续租(DHCP Request?)
+如果我们够decent，还会在关机前发个DHCP release——不过这个不要求
+DHCP是君子协定，服务器计算某个IP到期后就认为它可以分配给别的电脑了，，如果我们强行使用，就会在子网上造成IP冲突
+
+2015-12-10 15:26:54
+聊聊目前的状况
+实现了基础的网络架构——Host, Link, Switch, Router
+可以在链路上发 bit delimited 的 frame
+实现了原型的 Ethernet, ARP, IP, UDP
+目前打算做 DHCP，之后是 TCP, HTTP，以及 NAT
+
+代码已经有了混乱的迹象，在整个协议栈原型上过一遍，了解了都有哪些使用场景之后，会整体重构(其实是重写啦~)一下，，加上性能的考虑
+
+2015-12-10 18:55:59
+我艹 DHCP 协议实现起来真是费劲
+整体代码又到3K行了

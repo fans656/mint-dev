@@ -1,9 +1,15 @@
 from mint import *
-from f6 import each
 
 a = Host()
 b = Host(ip='192.168.0.1/24')
-link(a, b)
+c = Host()
+s = Switch()
+r = Router()
+
+link(a, s)
+link(b, s)
+link(s, r)
+link(r, c)
 
 from mint.protocols.dhcp import DHCPServer
 b.dhcp_server = DHCPServer(b)

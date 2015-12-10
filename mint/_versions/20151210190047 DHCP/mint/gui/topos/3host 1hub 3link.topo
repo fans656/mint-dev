@@ -1,85 +1,69 @@
 {
     "view": {
-        "mode": "Tik-Tok"
+        "mode": "Event"
     }, 
     "items": [
         {
             "role": "Host", 
             "index": 1, 
-            "x": 473.0, 
-            "y": 280.0, 
-            "console": {
-                "dx": 47.0, 
-                "dy": -86.0, 
-                "width": 390.0, 
-                "height": 235.0, 
-                "enabled": true, 
-                "has_frame": false, 
-                "visible": true, 
-                "tab_index": 0
-            }
-        }, 
-        {
-            "role": "Host", 
-            "index": 2, 
-            "x": 472.0, 
-            "y": -84.0, 
-            "console": {
-                "dx": 36.0, 
-                "dy": -89.0, 
-                "width": 431.0, 
-                "height": 239.0, 
-                "enabled": true, 
-                "has_frame": false, 
-                "visible": true, 
-                "tab_index": 0
-            }
-        }, 
-        {
-            "role": "Host", 
-            "index": 3, 
-            "x": 68.0, 
-            "y": 403.0, 
-            "console": {
-                "dx": -446.0, 
-                "dy": -192.0, 
-                "width": 404.0, 
-                "height": 240.0, 
-                "enabled": true, 
-                "has_frame": false, 
-                "visible": true, 
-                "tab_index": 0
-            }
-        }, 
-        {
-            "role": "Switch", 
-            "index": 1, 
-            "x": 371.0, 
-            "y": 125.0, 
+            "x": 0.0, 
+            "y": 0.0, 
             "console": {
                 "dx": 0.0, 
                 "dy": 0.0, 
                 "width": 806.0, 
                 "height": 512.0, 
                 "enabled": false, 
-                "has_frame": false, 
+                "has_frame": true, 
                 "visible": false, 
                 "tab_index": 0
             }
         }, 
         {
-            "role": "Router", 
-            "index": 1, 
-            "x": 192.0, 
-            "y": 199.0, 
+            "role": "Host", 
+            "index": 2, 
+            "x": 0.0, 
+            "y": 0.0, 
             "console": {
-                "dx": -563.0, 
-                "dy": -387.0, 
-                "width": 641.0, 
-                "height": 351.0, 
-                "enabled": true, 
-                "has_frame": false, 
-                "visible": true, 
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": true, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Host", 
+            "index": 3, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 806.0, 
+                "height": 512.0, 
+                "enabled": false, 
+                "has_frame": true, 
+                "visible": false, 
+                "tab_index": 0
+            }
+        }, 
+        {
+            "role": "Hub", 
+            "index": 1, 
+            "x": 0.0, 
+            "y": 0.0, 
+            "console": {
+                "dx": 0.0, 
+                "dy": 0.0, 
+                "width": 262.0, 
+                "height": 219.0, 
+                "enabled": false, 
+                "has_frame": true, 
+                "visible": false, 
                 "tab_index": 0
             }
         }, 
@@ -94,7 +78,7 @@
                 "width": 806.0, 
                 "height": 512.0, 
                 "enabled": false, 
-                "has_frame": false, 
+                "has_frame": true, 
                 "visible": false, 
                 "tab_index": 0
             }
@@ -110,7 +94,7 @@
                 "width": 806.0, 
                 "height": 512.0, 
                 "enabled": false, 
-                "has_frame": false, 
+                "has_frame": true, 
                 "visible": false, 
                 "tab_index": 0
             }
@@ -126,23 +110,7 @@
                 "width": 806.0, 
                 "height": 512.0, 
                 "enabled": false, 
-                "has_frame": false, 
-                "visible": false, 
-                "tab_index": 0
-            }
-        }, 
-        {
-            "role": "Link", 
-            "index": 4, 
-            "x": 0.0, 
-            "y": 0.0, 
-            "console": {
-                "dx": 0.0, 
-                "dy": 0.0, 
-                "width": 806.0, 
-                "height": 512.0, 
-                "enabled": false, 
-                "has_frame": false, 
+                "has_frame": true, 
                 "visible": false, 
                 "tab_index": 0
             }

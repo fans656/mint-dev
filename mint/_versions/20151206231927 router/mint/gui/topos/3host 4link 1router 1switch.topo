@@ -38,11 +38,11 @@
         {
             "role": "Host", 
             "index": 3, 
-            "x": -82.0, 
-            "y": 134.0, 
+            "x": 68.0, 
+            "y": 403.0, 
             "console": {
-                "dx": -261.0, 
-                "dy": 49.0, 
+                "dx": -446.0, 
+                "dy": -192.0, 
                 "width": 404.0, 
                 "height": 240.0, 
                 "enabled": true, 
@@ -54,8 +54,8 @@
         {
             "role": "Switch", 
             "index": 1, 
-            "x": 282.0, 
-            "y": 131.0, 
+            "x": 371.0, 
+            "y": 125.0, 
             "console": {
                 "dx": 0.0, 
                 "dy": 0.0, 
@@ -70,17 +70,17 @@
         {
             "role": "Router", 
             "index": 1, 
-            "x": 132.0, 
-            "y": 43.0, 
+            "x": 192.0, 
+            "y": 199.0, 
             "console": {
-                "dx": -330.0, 
-                "dy": -241.0, 
-                "width": 552.0, 
-                "height": 209.0, 
+                "dx": -563.0, 
+                "dy": -387.0, 
+                "width": 641.0, 
+                "height": 351.0, 
                 "enabled": true, 
                 "has_frame": false, 
                 "visible": true, 
-                "tab_index": 0
+                "tab_index": 2
             }
         }, 
         {
