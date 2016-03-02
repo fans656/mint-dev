@@ -1,3 +1,4 @@
+from collections import deque
 import mint
 from mint import Signal
 from mint.interface import Interface
@@ -6,7 +7,7 @@ from mint.core import EntityWithNIC
 from mint.libsocket import LibSocket
 from mint.protocols.dhcp import DHCPClient
 from mint.pdus import (
-    Frame, Packet, Datagram,
+    Frame, Packet, Datagram, Segment,
     IP, Port,
     IP_Broadcast,
     Discomposer,
@@ -20,6 +21,10 @@ class Host(EntityWithNIC):
         self.sockets = {
             Packet.Protocol.TCP: {},
             Packet.Protocol.UDP: {},
+        }
+        self.ports = {
+            LibSocket.SOCK_DGRAM: deque(range(49152, 65535)),
+            LibSocket.SOCK_STREAM: deque(range(49152, 65535)),
         }
 
         ip = kwargs.get('ip', None)
@@ -111,22 +116,23 @@ class Host(EntityWithNIC):
 
     def on_ipv4(self, frame, **_):
         packet = Packet(frame.payload)
-        if packet.protocol == Packet.Protocol.UDP:
-            self.on_udp(packet)
+        if packet.protocol == Packet.Protocol.TCP:
+            PDU = Segment
+        elif packet.protocol == Packet.Protocol.UDP:
+            PDU = Datagram
+        else:
+            self.report('unsupported transport layer protocol')
+            return
+        self.on_transport_pdu(packet, PDU)
 
-    def on_udp(self, packet):
-        datagram = Datagram(packet.payload)
+    def on_transport_pdu(self, packet, PDU):
+        pdu = PDU(packet.payload)
         try:
             addr2socket = self.sockets[packet.protocol]
         except KeyError:
-            self.report(
-                'UDP({}:{} -> {}:{}): {}',
-                packet.src_ip, datagram.src_port,
-                packet.dst_ip, datagram.dst_port,
-                repr(datagram.payload),
-            )
+            pass
         else:
-            ip, port = packet.dst_ip, datagram.dst_port
+            ip, port = packet.dst_ip, pdu.dst_port
             if ip == IP_Broadcast:
                 ip = self.ip
             try:
@@ -135,10 +141,10 @@ class Host(EntityWithNIC):
                 self.report(
                     'no handler at {} {}:{}, ignored',
                     Packet.Protocol[packet.protocol],
-                    packet.dst_ip, datagram.dst_port,
+                    packet.dst_ip, pdu.dst_port,
                 )
             else:
-                sock.feed_datagrams(datagram, packet.src_ip)
+                sock.feed(pdu, packet.src_ip)
 
     def run(self):
         if not self.ip:
@@ -155,17 +161,31 @@ class Host(EntityWithNIC):
         if not ip:
             ip = self.interface.ip
 
-        port = Port(port) # TODO: port == None
+        if port is None:
+            port = self.ports[sock.type].popleft()
+        port = Port(port)
 
         addr = (ip, port)
 
+        addr2socket = self.get_addr2socket(sock)
+        addr2socket[addr] = sock
+        return addr
+
+    def close_socket(self, sock):
+        addr2socket = self.get_addr2socket(sock)
+        sock = addr2socket.pop(sock.addr, None)
+        if sock:
+            self.ports[sock.type].append(sock.port)
+
+    def get_addr2socket(self, sock):
         if sock.type == LibSocket.SOCK_DGRAM:
             addr2socket = self.sockets[Packet.Protocol.UDP]
+        elif sock.type == LibSocket.SOCK_STREAM:
+            addr2socket = self.sockets[Packet.Protocol.TCP]
         else:
             self.report('invalid bind')
             return (None, None)
-        addr2socket[addr] = sock
-        return addr
+        return addr2socket
 
     @property
     def status(self):

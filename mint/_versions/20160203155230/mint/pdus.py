@@ -5,10 +5,12 @@ class PDU(object):
 
     def __init__(self, raw=None, *args, **kwargs):
         self.__i = 0
-        if args:
-            raw = self.compose(raw, *args)
-        elif kwargs:
+        if args and kwargs:
+            raise ValueError('PDU with args and kwargs')
+        if kwargs:
             raw = self.compose(**kwargs)
+        elif args:
+            raw = self.compose(raw, *args)
         self.raw = raw
         try:
             self.discompose(Raw(raw))
@@ -81,14 +83,43 @@ class Packet(PDU):
 class Datagram(PDU):
 
     def discompose(self, raw):
-        self.src_port = port_from_bytes(raw.pop(2))
-        self.dst_port = port_from_bytes(raw.pop(2))
+        self.src_port = Port(raw.pop(2))
+        self.dst_port = Port(raw.pop(2))
         self.payload = raw.popall()
 
     def compose(self, src_port, dst_port, payload):
-        #assert isinstance(src_port, Port)
-        #assert isinstance(dst_port, Port)
         return src_port + dst_port + payload
+
+class Segment(PDU):
+
+    IDX_ACK = 3
+    IDX_SYN = 6
+    IDX_FIN = 7
+
+    def discompose(self, raw):
+        self.src_port = Port.from_bytes(raw.pop(2))
+        self.dst_port = Port.from_bytes(raw.pop(2))
+        flags = bitarray()
+        flags.frombytes(raw.pop(1))
+        self.ack = flags[Segment.IDX_ACK]
+        self.syn = flags[Segment.IDX_SYN]
+        self.fin = flags[Segment.IDX_FIN]
+        self.payload = raw.popall()
+
+    def compose(self,
+                src_port,
+                dst_port,
+                syn=False,
+                ack=False,
+                fin=False,
+                payload='',
+                ):
+        flags = bitarray('0' * 8)
+        flags[Segment.IDX_ACK] = ack
+        flags[Segment.IDX_SYN] = syn
+        flags[Segment.IDX_FIN] = fin
+        flags = flags.tobytes()
+        return src_port + dst_port + flags + payload
 
 class ARP(PDU):
 
@@ -327,6 +358,8 @@ class Discomposer(object):
             r['IPv4']['Payload'] = repr(packet.payload)
         elif packet.protocol == Packet.Protocol.UDP:
             self.dis_udp(r, packet.payload)
+        elif packet.protocol == Packet.Protocol.TCP:
+            self.dis_tcp(r, packet.payload)
 
     def dis_udp(self, r, raw):
         datagram = Datagram(raw)
@@ -338,6 +371,17 @@ class Discomposer(object):
             self.dis_dhcp(r, datagram.payload)
         else:
             r['UDP']['Payload'] = repr(datagram.payload)
+
+    def dis_tcp(self, r, raw):
+        segment = Segment(raw)
+        r['TCP'] = OrderedDict([
+            ('Src Port', str(segment.src_port)),
+            ('Dst Port', str(segment.dst_port)),
+            ('Syn', segment.syn),
+            ('Ack', segment.ack),
+            ('Fin', segment.fin),
+        ])
+        r['TCP']['Payload'] = repr(segment.payload)
 
     def dis_dhcp(self, r, raw):
         from mint.protocols import DHCP

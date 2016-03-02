@@ -798,3 +798,21 @@ DHCP是君子协定，服务器计算某个IP到期后就认为它可以分配�
 2015-12-10 18:55:59
 我艹 DHCP 协议实现起来真是费劲
 整体代码又到3K行了
+
+2015-12-10 22:06:01
+tcp有点儿复杂，一时写不出来，，今儿写晕了已经
+等以后头脑清醒了，先仔细爬爬wiki再说
+
+2015-12-11 09:43:56
+因为整docker翻墙的东西跑来看SOCKS，干脆也写在这儿吧
+
+https://en.wikipedia.org/wiki/SOCKS
+"a SOCKS server proxies TCP connections to an arbitrary IP address, and provides a means for UDP packets to be forwarded"
+也就是说，至少我们Bandwagon VPS上的 ShadowSocks Server 是可以 proxy TCP 和 UDP 的
+也就是说，TCP和UDP之上的 HTTP, HTTPS, FTP, DNS 等等都可以了
+
+https://pypi.python.org/pypi/shadowsocks
+下了个shadowsocks的源码(Python写的)，看样子client和server都有，总共也不多，3K行
+
+2015-12-11 11:48:09
+擦.. 暂时看不懂——主要是觉得没精力，，以后吧
