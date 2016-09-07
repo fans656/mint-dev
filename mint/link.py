@@ -13,7 +13,7 @@ class Link(Node):
         self.b_tip = self.tips[1]
         self.b.fuse(self.b_tip)
 
-    def process(self, ev):
+    def on_recv(self, ev):
         src = self.other_end(ev.src)
         data = ev.data
         now = ev.now + self.delay

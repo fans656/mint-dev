@@ -37,9 +37,7 @@ class Env(object):
         self.timeline.sort()
         while self.timeline:
             ev = self.timeline.pop()
-            # TODO: why 10 instead of 8?
-            if not self.timeline or self.timeline[-1].now > ev.now:
-                self.now = ev.now
+            self.now = ev.now
             if debug:
                 print ev
             ev()

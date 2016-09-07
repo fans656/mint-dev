@@ -10,9 +10,10 @@ class Tip(Obj):
         self.peer = None
 
     def send(self, data):
-        ev = event.Send(src=self, data=data)
-        self.env.post(ev)
-        return ev
+        if self.peer is not None:
+            ev = event.Send(src=self, data=data)
+            self.env.post(ev)
+            return ev
 
     def recv(self, data):
         self.env.post(event.Recv(src=self, data=data))
@@ -23,7 +24,6 @@ class Tip(Obj):
         peer.peer = self
 
     def __repr__(self):
-        return '{} {}->{}'.format(
+        return '{}->{}'.format(
             self.master,
-            super(Tip, self).__repr__(),
-            super(Tip, self.peer).__repr__())
+            self.peer.master)

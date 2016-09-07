@@ -1,6 +1,9 @@
+import env
+
 class Event(object):
 
     def __init__(self, now=None):
+        self.env = env.env
         self.now = now
 
     def __lt__(self, o):
@@ -29,9 +32,20 @@ class Send(Transmit):
 
     def __call__(self):
         if self.src.peer:
+            self.src.master.on_send(self)
             self.src.peer.recv(self.data)
 
 class Recv(Transmit):
 
     def __call__(self):
-        self.src.master.process(self)
+        self.src.master.on_recv(self)
+
+class Timeout(Event):
+
+    def __init__(self, delay, callback):
+        super(Timeout, self).__init__()
+        self.now = self.env.now + delay
+        self.callback = callback
+
+    def __call__(self):
+        self.callback()

@@ -1,18 +1,14 @@
 from node import Node
+from protocols.protocol import Log
 
 class Host(Node):
 
     def __init__(self):
         super(Host, self).__init__(n_tips=1)
+        Log(self)
 
-    def send(self, s):
-        return self.tip.send(s)
+    def send(self, data):
+        return self.tip.send(data)
 
     def recv(self, f):
         self.on_recv = f
-
-    def on_recv(self, data):
-        print '{} recved "{}" at {}'.format(self, data, self.env.now)
-
-    def process(self, ev):
-        self.on_recv(ev.data)
